@@ -13,3 +13,17 @@ forp is a lightweight PHP extension which provides CPU and memory profiling data
 - forp_enable() : starts forp
 - forp_dump() : Array - forp stack
 - forp_print() : displays forp stack (CLI)
+
+## Install ##
+
+* make
+git clone https://github.com/aterrien/forp
+cd forp
+phpize
+./configure
+make
+make test
+make install
+
+* php.ini
+extension=forp.so
