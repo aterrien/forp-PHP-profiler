@@ -17,7 +17,7 @@ forp is a lightweight PHP extension which provides CPU and memory profiling data
 ## Install ##
 
 * make
-```make
+```sh
 git clone https://github.com/aterrien/forp
 cd forp
 phpize
@@ -28,6 +28,6 @@ make install
 ```
 
 * php.ini
-```phpini
+```ini
 extension=forp.so
 ```
