@@ -2,8 +2,7 @@
 
 on : PHP 5.3.8,  Debian Squeeze
 
-[![Build Status](https://secure.travis-ci.org/aterrien/forp.png?branch=master)](http://travis-ci.org/aterrien/forp)
-
+[![Build Status](https://secure.travis-ci.org/aterrien/forp.png)](http://travis-ci.org/aterrien/forp)
 
 # Introduction #
 
