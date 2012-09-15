@@ -28,6 +28,11 @@
 #include <sys/time.h>
 #elif defined(PHP_WIN32)
 #include "win32/time.h"
+#include <math.h>
+static inline double round(double val)
+{    
+    return floor(val + 0.5);
+}
 #endif
 #include <stdio.h>
 #include "zend_exceptions.h"
