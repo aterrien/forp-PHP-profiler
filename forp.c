@@ -371,6 +371,8 @@ void forp_execute_internal(zend_execute_data *current_execute_data, int ret TSRM
 void forp_stack_dump()
 {
 	int i;
+    zval *t;
+	zval *time;
 
 	MAKE_STD_ZVAL(FORP_G(dump));
 	array_init(FORP_G(dump));
@@ -384,7 +386,6 @@ void forp_stack_dump()
                 }
 		
 		// stack entry
-		zval *t;
 		MAKE_STD_ZVAL(t);
 	        array_init(t);
 
@@ -397,7 +398,6 @@ void forp_stack_dump()
 		if (pn->function.function)
 			add_assoc_string(t, FORP_DUMP_ASSOC_FUNCTION, pn->function.function, 1);
 		
-		zval *time;
 		MAKE_STD_ZVAL(time);
 		ZVAL_DOUBLE(time, round(pn->time * 1000000.0) / 1000000.0);
 		add_assoc_zval(t, FORP_DUMP_ASSOC_CPU, time);
