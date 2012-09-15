@@ -24,7 +24,11 @@
 #include "php_ini.h"
 #include "ext/standard/info.h"
 #include "php_forp.h"
+#if HAVE_SYS_TIME_H
 #include <sys/time.h>
+#elif defined(PHP_WIN32)
+#include "win32/time.h"
+#endif
 #include <stdio.h>
 #include "zend_exceptions.h"
 
