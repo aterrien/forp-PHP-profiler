@@ -41,3 +41,4 @@ Debug/
 *.v11.suo
 *.vcxproj
 *.vcxproj.filters
+/*.cache

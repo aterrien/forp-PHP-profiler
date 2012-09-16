@@ -24,7 +24,16 @@
 #include "php_ini.h"
 #include "ext/standard/info.h"
 #include "php_forp.h"
+#if HAVE_SYS_TIME_H
 #include <sys/time.h>
+#elif defined(PHP_WIN32)
+#include "win32/time.h"
+#include <math.h>
+static inline double round(double val)
+{    
+    return floor(val + 0.5);
+}
+#endif
 #include <stdio.h>
 #include "zend_exceptions.h"
 
@@ -268,7 +277,7 @@ PHP_RSHUTDOWN_FUNCTION(forp)
  */
 ZEND_FUNCTION(forp_info)
 {
-	php_info_print_style();
+	php_info_print_style(TSRMLS_C);
 	forp_info();
 }
 /* }}} */
@@ -364,10 +373,12 @@ void forp_execute_internal(zend_execute_data *current_execute_data, int ret TSRM
 
 /* {{{ forp_stack_dump
  */
-void forp_stack_dump()
+void forp_stack_dump(TSRMLS_D)
 {
 	int i;
-
+    zval *t;
+	zval *time;
+	
 	MAKE_STD_ZVAL(FORP_G(dump));
 	array_init(FORP_G(dump));
 	
@@ -380,7 +391,6 @@ void forp_stack_dump()
                 }
 		
 		// stack entry
-		zval *t;
 		MAKE_STD_ZVAL(t);
 	        array_init(t);
 
@@ -393,7 +403,6 @@ void forp_stack_dump()
 		if (pn->function.function)
 			add_assoc_string(t, FORP_DUMP_ASSOC_FUNCTION, pn->function.function, 1);
 		
-		zval *time;
 		MAKE_STD_ZVAL(time);
 		ZVAL_DOUBLE(time, round(pn->time * 1000000.0) / 1000000.0);
 		add_assoc_zval(t, FORP_DUMP_ASSOC_CPU, time);
@@ -417,7 +426,7 @@ ZEND_FUNCTION(forp_dump)
 	if (FORP_G(enable)) {
 		if(!FORP_G(dump)) {
   			forp_end(FORP_G(main) TSRMLS_CC);
-			forp_stack_dump();
+			forp_stack_dump(TSRMLS_C);
 		}
         } else {
 		php_error_docref(
@@ -435,8 +444,7 @@ ZEND_FUNCTION(forp_dump)
  */
 ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp)
 {
-	TSRMLS_FETCH();
-
+    TSRMLS_FETCH();
 	FORP_G(nesting_level) = 0;
 	FORP_G(current_node) = NULL;
 
@@ -453,7 +461,6 @@ ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp)
 
         if(FORP_G(dump)) zval_ptr_dtor(&FORP_G(dump));
         FORP_G(dump) = NULL;
-
 	return SUCCESS;
 }
 /* }}} */
@@ -480,7 +487,7 @@ void forp_stack_dump_cli_node(forp_node *node TSRMLS_DC)
 
 /* {{{ forp_stack_dump_cli
  */
-void forp_stack_dump_cli()
+void forp_stack_dump_cli(TSRMLS_D)
 {
         int i;
         php_printf("-----------------------------------------------------------------------------------------------------------%s", PHP_EOL);
@@ -497,7 +504,7 @@ ZEND_FUNCTION(forp_print)
 {
 	if(FORP_G(enable)) {
 		forp_end(FORP_G(main) TSRMLS_CC);
-        	forp_stack_dump_cli();
+        	forp_stack_dump_cli(TSRMLS_C);
 	} else {
 		php_error_docref(
 			NULL TSRMLS_CC, 
