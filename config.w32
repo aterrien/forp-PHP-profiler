@@ -1,7 +1,8 @@
 // $Id$
 // vim:ft=javascript
 
-ARG_WITH("forp", "enable forp support", "no");
+// use : --with-forp[=shared]
+ARG_WITH("forp", "Enable forp support", "no");
 
 if (PHP_FORP != "no") {
 	EXTENSION("forp", "forp.c");
