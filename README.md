@@ -30,3 +30,11 @@ make install
 ```ini
 extension=forp.so
 ```
+
+## Win32 Install ##
+
+For PHP 5.3 - Thread Safe (by default) :
+https://github.com/downloads/ichiriac/forp/php53_x86_ts_forp.dll
+
+For PHP 5.3 - Non Thread Safe :
+https://github.com/downloads/ichiriac/forp/php53_x86_nts_forp.dll
