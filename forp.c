@@ -36,6 +36,7 @@ static inline double round(double val)
 #endif
 #include <stdio.h>
 #include "zend_exceptions.h"
+#include <sys/resource.h>
 
 /* proxy */
 zend_op_array* (*old_compile_file)(zend_file_handle* file_handle, int type TSRMLS_DC);
@@ -78,7 +79,7 @@ zend_module_entry forp_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
 	FORP_VERSION,
 #endif
-	NO_MODULE_GLOBALS, 
+	NO_MODULE_GLOBALS,
 	/*PHP_GINIT(forp), PHP_GSHUTDOWN(forp),*/
 	ZEND_MODULE_POST_ZEND_DEACTIVATE_N(forp),
 	STANDARD_MODULE_PROPERTIES_EX
@@ -112,9 +113,9 @@ static void php_forp_init_globals(zend_forp_globals *forp_globals)
  */
 PHP_MINIT_FUNCTION(forp)
 {
-	/* If you have INI entries, uncomment these lines */ 
+	/* If you have INI entries, uncomment these lines */
 	REGISTER_INI_ENTRIES();
-	
+
 	/* Prof const */
 	REGISTER_LONG_CONSTANT("FORP_MEMORY", FORP_MEMORY, CONST_CS | CONST_PERSISTENT);
 	REGISTER_LONG_CONSTANT("FORP_CPU", FORP_CPU, CONST_CS | CONST_PERSISTENT);
@@ -135,8 +136,8 @@ PHP_MSHUTDOWN_FUNCTION(forp)
 /* {{{ forp_populate_function
  */
 static void forp_populate_function(
-	forp_function *function, 
-	zend_execute_data *edata, 
+	forp_function *function,
+	zend_execute_data *edata,
 	zend_op_array *op_array TSRMLS_DC
 )
 {
@@ -164,13 +165,13 @@ static void forp_populate_function(
 					function->class = strdup(edata->function_state.function->common.scope->name);
                                 }
                         } else if (
-				EG(scope) 
-				&& edata->function_state.function->common.scope 
+				EG(scope)
+				&& edata->function_state.function->common.scope
 				&& edata->function_state.function->common.scope->name
 			) {
 				function->class = strdup(edata->function_state.function->common.scope->name);
                         }
-                        
+
 			function->function = strdup(edata->function_state.function->common.function_name);
                 } else {
 #if PHP_VERSION_ID >= 50399
@@ -199,7 +200,7 @@ static void forp_populate_function(
                         }
 		}
         }else{
-		edata = EG(current_execute_data);	
+		edata = EG(current_execute_data);
 		function->class = NULL;
 		function->function = "{main}";
 		function->filename = edata->op_array->filename;
@@ -214,22 +215,22 @@ forp_node *forp_begin(zend_execute_data *edata, zend_op_array *op_array TSRMLS_D
 	struct timeval tv;
         forp_node *pn;
 	int key;
-       
+
 	pn = emalloc(sizeof(forp_node));
         pn->level = FORP_G(nesting_level)++;
 	pn->parent = FORP_G(current_node);
 
 	forp_populate_function( &(pn->function), edata, op_array TSRMLS_CC);
-			
+
 	FORP_G(current_node) = pn;
 	key = FORP_G(stack_len);
 	pn->key = key;
 	FORP_G(stack_len)++;
 	FORP_G(stack) =  erealloc(FORP_G(stack), FORP_G(stack_len) * sizeof(forp_node));
 	FORP_G(stack)[key] = pn;
-	
+
 	gettimeofday(&tv, NULL);
-        pn->time_begin = tv.tv_sec * 1000000.0 + tv.tv_usec;
+	pn->time_begin = tv.tv_sec * 1000000.0 + tv.tv_usec;
 
 	pn->mem_begin = zend_memory_usage(0 TSRMLS_CC);
 
@@ -290,7 +291,7 @@ ZEND_FUNCTION(forp_enable)
 	/*if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &opt) == FAILURE) {
                 return;
         }*/
-	FORP_G(enable) = opt; 
+	FORP_G(enable) = opt;
         if (FORP_G(enable)) {
         	// Proxying zend api methods
         	old_execute = zend_execute;
@@ -324,11 +325,11 @@ void forp_end(forp_node *pn TSRMLS_DC)
         /* Memory capture before next steps */
         pn->mem_end = zend_memory_usage(0 TSRMLS_CC);
         pn->mem = pn->mem_end-pn->mem_begin;
-        
+
         gettimeofday(&tv, NULL);
         pn->time_end = tv.tv_sec * 1000000.0 + tv.tv_usec;
         pn->time = pn->time_end - pn->time_begin;
-        
+
 	/* Back to parent nesting level */
         FORP_G(current_node) = pn->parent;
         FORP_G(nesting_level)--;
@@ -381,7 +382,7 @@ void forp_stack_dump(TSRMLS_D)
 	
 	MAKE_STD_ZVAL(FORP_G(dump));
 	array_init(FORP_G(dump));
-	
+
 	for (i = 0; i < FORP_G(stack_len); ++i) {
                 forp_node *pn;
 		pn = FORP_G(stack)[i];
@@ -389,20 +390,25 @@ void forp_stack_dump(TSRMLS_D)
 		if (strstr(FORP_SKIP, pn->function.function)) {
                         continue;
                 }
-		
+
 		// stack entry
 		MAKE_STD_ZVAL(t);
 	        array_init(t);
 
-		if (pn->function.filename) 
+		if (pn->function.filename)
 			add_assoc_string(t, FORP_DUMP_ASSOC_FILE, pn->function.filename, 1);
 
-		if (pn->function.class) 
+		if (pn->function.class)
 			add_assoc_string(t, FORP_DUMP_ASSOC_CLASS, pn->function.class, 1);
 
 		if (pn->function.function)
 			add_assoc_string(t, FORP_DUMP_ASSOC_FUNCTION, pn->function.function, 1);
+<<<<<<< HEAD
 		
+=======
+
+		zval *time;
+>>>>>>> comments
 		MAKE_STD_ZVAL(time);
 		ZVAL_DOUBLE(time, round(pn->time * 1000000.0) / 1000000.0);
 		add_assoc_zval(t, FORP_DUMP_ASSOC_CPU, time);
@@ -411,7 +417,7 @@ void forp_stack_dump(TSRMLS_D)
 
 		// {main} don't have parent
 		if (pn->parent) add_assoc_long(t, FORP_DUMP_ASSOC_PARENT, pn->parent->key);
-		
+
 		if (zend_hash_next_index_insert(Z_ARRVAL_P(FORP_G(dump)), (void *) &t, sizeof(zval *), NULL) == FAILURE) {
 		    return;
         	}
@@ -507,10 +513,10 @@ ZEND_FUNCTION(forp_print)
         	forp_stack_dump_cli(TSRMLS_C);
 	} else {
 		php_error_docref(
-			NULL TSRMLS_CC, 
+			NULL TSRMLS_CC,
 			E_NOTICE,
             		"forp_print() has no effect when forp_enable is turned off."
 		);
-	}	
+	}
 }
 /* }}} */
