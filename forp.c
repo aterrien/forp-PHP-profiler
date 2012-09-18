@@ -98,13 +98,15 @@ PHP_INI_BEGIN()
 PHP_INI_END()
 /* }}} */
 
-/* {{{ php_forp_init_globals
+
+/* {{{ PHP_GINIT_FUNCTION
  */
 static void php_forp_init_globals(zend_forp_globals *forp_globals)
 {
 	forp_globals->enable = 0;
 	forp_globals->max_nesting_level = 10;
 	forp_globals->no_internal = 1;
+	forp_globals->dump = NULL;
 }
 /* }}} */
 
@@ -112,7 +114,8 @@ static void php_forp_init_globals(zend_forp_globals *forp_globals)
  */
 PHP_MINIT_FUNCTION(forp)
 {
-	/* If you have INI entries, uncomment these lines */ 
+	/* If you have INI entries, uncomment these lines */
+    ZEND_INIT_MODULE_GLOBALS(forp, php_forp_init_globals, NULL); 
 	REGISTER_INI_ENTRIES();
 	
 	/* Prof const */
@@ -260,6 +263,7 @@ PHP_MINFO_FUNCTION(forp)
  */
 PHP_RSHUTDOWN_FUNCTION(forp)
 {
+
 	// Restoring zend api methods
         if (old_execute) {
         	zend_execute = old_execute;
@@ -445,22 +449,23 @@ ZEND_FUNCTION(forp_dump)
 ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp)
 {
     TSRMLS_FETCH();
-	FORP_G(nesting_level) = 0;
-	FORP_G(current_node) = NULL;
-
-	// Freeing
-        if(FORP_G(stack)) {
-                int i;
-                for (i = 0; i < FORP_G(stack_len); ++i) {
-			efree(FORP_G(stack)[i]);
-                }
-                if (i) efree(FORP_G(stack));
+    // reset globals
+    FORP_G(nesting_level) = 0;
+    FORP_G(current_node) = NULL;
+    // Freeing
+    if(FORP_G(stack)) {
+        int i;
+        for (i = 0; i < FORP_G(stack_len); ++i) {
+            efree(FORP_G(stack)[i]);
         }
-	FORP_G(stack_len) = 0;
-        FORP_G(stack) = NULL;
-
-        if(FORP_G(dump)) zval_ptr_dtor(&FORP_G(dump));
-        FORP_G(dump) = NULL;
+        if (i) efree(FORP_G(stack));
+    }
+    // destruct the stack
+    FORP_G(stack_len) = 0;
+    FORP_G(stack) = NULL;
+    // destruct the dump
+    if(FORP_G(dump)) zval_ptr_dtor(&FORP_G(dump));
+    FORP_G(dump) = NULL;
 	return SUCCESS;
 }
 /* }}} */
