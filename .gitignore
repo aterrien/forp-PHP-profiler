@@ -42,3 +42,4 @@ Debug/
 *.vcxproj
 *.vcxproj.filters
 /*.cache
+/nbproject
