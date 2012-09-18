@@ -14,7 +14,7 @@
   +----------------------------------------------------------------------+
   | Author: Anthony Terrien <forp@anthonyterrien.com>                    |
   +----------------------------------------------------------------------+
-*/
+ */
 
 #ifndef PHP_FORP_H
 #define PHP_FORP_H
@@ -24,6 +24,7 @@
 #define FORP_DUMP_ASSOC_FILE		"file"
 #define FORP_DUMP_ASSOC_CLASS		"class"
 #define FORP_DUMP_ASSOC_FUNCTION	"function"
+#define FORP_DUMP_ASSOC_LINENO          "lineno"
 #define FORP_DUMP_ASSOC_CPU		"usec"
 #define FORP_DUMP_ASSOC_MEMORY		"bytes"
 #define FORP_DUMP_ASSOC_LEVEL		"level"
@@ -35,11 +36,11 @@ extern zend_module_entry forp_module_entry;
 #define phpext_forp_ptr &forp_module_entry
 
 #ifdef PHP_WIN32
-#	define PHP_FORP_API __declspec(dllexport)
+#define PHP_FORP_API __declspec(dllexport)
 #elif defined(__GNUC__) && __GNUC__ >= 4
-#	define PHP_FORP_API __attribute__ ((visibility("default")))
+#define PHP_FORP_API __attribute__ ((visibility("default")))
 #else
-#	define PHP_FORP_API
+#define PHP_FORP_API
 #endif
 
 #ifdef ZTS
@@ -58,66 +59,31 @@ PHP_FUNCTION(forp_print);
 PHP_FUNCTION(forp_info);
 
 typedef struct _forp_function {
-	char *filename;
-        char *class;
-        char *function;
-	int type;
+    char *filename;
+    char *class;
+    char *function;
+    int lineno;
+    int type;
 } forp_function;
 
 typedef struct _forp_node {
+    int key;
+    forp_function function;
+    int level;
+    char *include_filename;
+    struct _forp_node *parent;
 
-	int key;
-        forp_function function;
-	int level;
-        int lineno;
-        char *include_filename;
-        struct _forp_node *parent;
+    // Memory
+    signed long mem;
+    signed long mem_begin;
+    signed long mem_end;
 
-        /* Memory */
-        signed long  mem;
-        signed long  mem_begin;
-        signed long  mem_end;
-
-        /* CPU */
-        double       time;
-        double       time_begin;
-        double       time_end;
+    // CPU
+    double time;
+    double time_begin;
+    double time_end;
 } forp_node;
 
-
-/* 
-  	Declare any global variables you may need between the BEGIN
-	and END macros here:     
-*/
-ZEND_BEGIN_MODULE_GLOBALS(forp)
-	int enable;
-	long  nesting_level;
-	forp_node *main;
-	forp_node *current_node;
-	int stack_len;
-	forp_node **stack;
-	zval *dump;
-	long max_nesting_level;
-	int no_internal;
-ZEND_END_MODULE_GLOBALS(forp)
-
-ZEND_DECLARE_MODULE_GLOBALS(forp);
-
-/* In every utility function you add that needs to use variables 
-   in php_forp_globals, call TSRMLS_FETCH(); after declaring other 
-   variables used by that function, or better yet, pass in TSRMLS_CC
-   after the last function argument and declare your utility function
-   with TSRMLS_DC after the last declared argument.  Always refer to
-   the globals in your function as FORP_G(variable).  You are 
-   encouraged to rename these macros something shorter, see
-   examples in any other php module directory.
-*/
-
-#ifdef ZTS
-#define FORP_G(v) TSRMG(forp_globals_id, zend_forp_globals *, v)
-#else
-#define FORP_G(v) (forp_globals.v)
-#endif
 
 #endif	/* PHP_FORP_H */
 
