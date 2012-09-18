@@ -22,7 +22,7 @@ if test "$PHP_FORP" != "no"; then
 
   dnl # --with-forp -> check with-path
   dnl SEARCH_PATH="/usr/local /usr"     # you might want to change this
-  dnl SEARCH_FOR="/include/forp.h"  # you most likely want to change this
+  dnl SEARCH_FOR="/include/php_forp.h /include/forp.h"  # you most likely want to change this
   dnl if test -r $PHP_FORP/$SEARCH_FOR; then # path given as parameter
   dnl   FORP_DIR=$PHP_FORP
   dnl else # search default path list
@@ -59,5 +59,5 @@ if test "$PHP_FORP" != "no"; then
   dnl
   dnl PHP_SUBST(FORP_SHARED_LIBADD)
 
-  PHP_NEW_EXTENSION(forp, forp.c, $ext_shared)
+  PHP_NEW_EXTENSION(forp, php_forp.c forp.c, $ext_shared)
 fi

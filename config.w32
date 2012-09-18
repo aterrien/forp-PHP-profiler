@@ -5,6 +5,6 @@
 ARG_WITH("forp", "Enable forp support", "no");
 
 if (PHP_FORP != "no") {
-	EXTENSION("forp", "forp.c");
+	EXTENSION("forp", "php_forp.c forp.c");
 }
 

@@ -14,34 +14,35 @@
   +----------------------------------------------------------------------+
   | Author: Anthony Terrien <forp@anthonyterrien.com>                    |
   +----------------------------------------------------------------------+
-*/
+ */
 
 #ifndef PHP_FORP_H
 #define PHP_FORP_H
 
-#define FORP_VERSION    		"0.0.1"
-#define FORP_SKIP			"|forp_dump|forp_print|"
-#define FORP_DUMP_ASSOC_FILE		"file"
-#define FORP_DUMP_ASSOC_CLASS		"class"
-#define FORP_DUMP_ASSOC_FUNCTION	"function"
-#define FORP_DUMP_ASSOC_CPU		"usec"
-#define FORP_DUMP_ASSOC_MEMORY		"bytes"
-#define FORP_DUMP_ASSOC_LEVEL		"level"
-#define FORP_DUMP_ASSOC_PARENT		"parent"
-#define FORP_CPU	        	1
-#define FORP_MEMORY		        2
+#define FORP_VERSION                    "0.0.1"
+#define FORP_SKIP                       "|forp_dump|forp_print|"
+#define FORP_DUMP_ASSOC_FILE            "file"
+#define FORP_DUMP_ASSOC_CLASS           "class"
+#define FORP_DUMP_ASSOC_FUNCTION        "function"
+#define FORP_DUMP_ASSOC_CPU             "usec"
+#define FORP_DUMP_ASSOC_MEMORY          "bytes"
+#define FORP_DUMP_ASSOC_LEVEL           "level"
+#define FORP_DUMP_ASSOC_PARENT          "parent"
+#define FORP_CPU                        1
+#define FORP_MEMORY                     2
 
 extern zend_module_entry forp_module_entry;
 #define phpext_forp_ptr &forp_module_entry
 
 #ifdef PHP_WIN32
-#	define PHP_FORP_API __declspec(dllexport)
+#define PHP_FORP_API __declspec(dllexport)
 #elif defined(__GNUC__) && __GNUC__ >= 4
-#	define PHP_FORP_API __attribute__ ((visibility("default")))
+#define PHP_FORP_API __attribute__ ((visibility("default")))
 #else
-#	define PHP_FORP_API
+#define PHP_FORP_API
 #endif
 
+#include "forp.h"
 #ifdef ZTS
 #include "TSRM.h"
 #endif
@@ -57,41 +58,13 @@ PHP_FUNCTION(forp_dump);
 PHP_FUNCTION(forp_print);
 PHP_FUNCTION(forp_info);
 
-typedef struct _forp_function {
-	char *filename;
-        char *class;
-        char *function;
-	int type;
-} forp_function;
-
-typedef struct _forp_node {
-
-	int key;
-        forp_function function;
-	int level;
-        int lineno;
-        char *include_filename;
-        struct _forp_node *parent;
-
-        /* Memory */
-        signed long  mem;
-        signed long  mem_begin;
-        signed long  mem_end;
-
-        /* CPU */
-        double       time;
-        double       time_begin;
-        double       time_end;
-} forp_node;
-
-
 /* 
-  	Declare any global variables you may need between the BEGIN
+	Declare any global variables you may need between the BEGIN
 	and END macros here:     
-*/
+ */
 ZEND_BEGIN_MODULE_GLOBALS(forp)
 	int enable;
-	long  nesting_level;
+	long nesting_level;
 	forp_node *main;
 	forp_node *current_node;
 	int stack_len;
@@ -111,7 +84,7 @@ ZEND_DECLARE_MODULE_GLOBALS(forp);
    the globals in your function as FORP_G(variable).  You are 
    encouraged to rename these macros something shorter, see
    examples in any other php module directory.
-*/
+ */
 
 #ifdef ZTS
 #define FORP_G(v) TSRMG(forp_globals_id, zend_forp_globals *, v)
