@@ -19,18 +19,18 @@
 #ifndef PHP_FORP_H
 #define PHP_FORP_H
 
-#define FORP_VERSION    		"0.0.1"
-#define FORP_SKIP			"|forp_dump|forp_print|"
+#define FORP_VERSION                "0.0.1"
+#define FORP_SKIP                   "|forp_dump|forp_print|"
 #define FORP_DUMP_ASSOC_FILE		"file"
 #define FORP_DUMP_ASSOC_CLASS		"class"
 #define FORP_DUMP_ASSOC_FUNCTION	"function"
-#define FORP_DUMP_ASSOC_LINENO          "lineno"
-#define FORP_DUMP_ASSOC_CPU		"usec"
+#define FORP_DUMP_ASSOC_LINENO      "lineno"
+#define FORP_DUMP_ASSOC_CPU         "usec"
 #define FORP_DUMP_ASSOC_MEMORY		"bytes"
 #define FORP_DUMP_ASSOC_LEVEL		"level"
 #define FORP_DUMP_ASSOC_PARENT		"parent"
-#define FORP_CPU	        	1
-#define FORP_MEMORY		        2
+#define FORP_CPU                    0x0001
+#define FORP_MEMORY                 0x0002
 
 extern zend_module_entry forp_module_entry;
 #define phpext_forp_ptr &forp_module_entry
@@ -58,32 +58,31 @@ PHP_FUNCTION(forp_dump);
 PHP_FUNCTION(forp_print);
 PHP_FUNCTION(forp_info);
 
-typedef struct _forp_function {
-    char *filename;
-    char *class;
-    char *function;
-    int lineno;
-    int type;
-} forp_function;
+/*
+	Declare any global variables you may need between the BEGIN
+	and END macros here:
+*/
+/*
+ZEND_BEGIN_MODULE_GLOBALS(forp)
+	int enabled;
+	long nesting_level;
+	forp_node_t *main;
+	forp_node_t *current_node;
+	int stack_len;
+	forp_node_t **stack;
+	zval *dump;
+	long max_nesting_level;
+	int no_internal;
+ZEND_END_MODULE_GLOBALS(forp)
 
-typedef struct _forp_node {
-    int key;
-    forp_function function;
-    int level;
-    char *include_filename;
-    struct _forp_node *parent;
+ZEND_DECLARE_MODULE_GLOBALS(forp);
 
-    // Memory
-    signed long mem;
-    signed long mem_begin;
-    signed long mem_end;
-
-    // CPU
-    double time;
-    double time_begin;
-    double time_end;
-} forp_node;
-
+#ifdef ZTS
+#define FORP_G(v) TSRMG(forp_globals_id, zend_forp_globals *, v)
+#else
+#define FORP_G(v) (forp_globals.v)
+#endif
+*/
 
 #endif	/* PHP_FORP_H */
 
