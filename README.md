@@ -1,7 +1,5 @@
 !under development!
 
-on : PHP 5.3.8,  Debian Squeeze
-
 [![Build Status](https://secure.travis-ci.org/aterrien/forp.png)](http://travis-ci.org/aterrien/forp)
 
 # Introduction #
@@ -13,7 +11,7 @@ forp is a lightweight PHP extension which provides CPU and memory profiling data
 - forp_dump() : Array - forp stack
 - forp_print() : displays forp stack (CLI)
 
-## Install ##
+## Linux Install ##
 
 * make
 ```sh
