@@ -51,21 +51,6 @@ typedef struct forp_node_t {
     double time_end;
 } forp_node_t;
 
-// Main forp globals struct
-// Don't use provided macros because
-// of seg fault in ZTS mode
-typedef struct forp_global_t {
-	int enabled;
-	long nesting_level;
-	forp_node_t *main;
-	forp_node_t *current_node;
-	int stack_len;
-	forp_node_t **stack;
-	zval *dump;
-	long max_nesting_level;
-	int no_internal;
-} forp_global_t;
-
 /* proxy */
 zend_op_array* (*old_compile_file)(zend_file_handle* file_handle, int type TSRMLS_DC);
 zend_op_array* forp_compile_file(zend_file_handle*, int TSRMLS_DC);

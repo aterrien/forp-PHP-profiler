@@ -22,233 +22,21 @@
 
 #include "php.h"
 #include "php_ini.h"
-#include "ext/standard/info.h"
 #include "forp.h"
 #include "php_forp.h"
+
 #if HAVE_SYS_TIME_H
 #include <sys/time.h>
 #elif defined(PHP_WIN32)
 #include "win32/time.h"
 #include <math.h>
-
 static inline double round(double val) {
     return floor(val + 0.5);
 }
 #endif
+
 #include <stdio.h>
-#include "zend_exceptions.h"
 #include <sys/resource.h>
-
-// Inits forp_globals struct
-static forp_global_t forp_globals;
-
-/* {{{ forp_functions[]
- *
- * Every user visible function must have an entry in forp_functions[].
- */
-const zend_function_entry forp_functions[] = {
-    PHP_FE(forp_enable, NULL)
-    PHP_FE(forp_dump, NULL)
-    PHP_FE(forp_print, NULL)
-    PHP_FE(forp_info, NULL)
-    PHP_FE_END /* Must be the last line in forp_functions[] */
-};
-/* }}} */
-
-/* {{{ forp_module_entry
- */
-zend_module_entry forp_module_entry = {
-#if ZEND_MODULE_API_NO >= 20010901
-    STANDARD_MODULE_HEADER,
-#endif
-    "forp",
-    forp_functions,
-    PHP_MINIT(forp), // Main init
-    PHP_MSHUTDOWN(forp), // Main shutdown
-    NULL, // Request init
-    PHP_RSHUTDOWN(forp), // Request shutdown
-    PHP_MINFO(forp),
-#if ZEND_MODULE_API_NO >= 20010901
-    FORP_VERSION,
-#endif
-    NO_MODULE_GLOBALS,
-    /*PHP_GINIT(forp), PHP_GSHUTDOWN(forp),*/
-    ZEND_MODULE_POST_ZEND_DEACTIVATE_N(forp),
-    STANDARD_MODULE_PROPERTIES_EX
-};
-/* }}} */
-
-#ifdef COMPILE_DL_FORP
-ZEND_GET_MODULE(forp)
-#endif
-
-/* {{{ PHP_INI
- */
-//PHP_INI_BEGIN()
-//	STD_PHP_INI_BOOLEAN("forp.enable", "0", PHP_INI_ALL, OnUpdateBool, enabled, zend_forp_globals, forp_globals)
-//	STD_PHP_INI_ENTRY("forp.max_nesting_level", "10", PHP_INI_ALL, OnUpdateLong, max_nesting_level, zend_forp_globals, forp_globals)
-//	STD_PHP_INI_BOOLEAN("forp.no_internal", "1", PHP_INI_ALL, OnUpdateBool, no_internal, zend_forp_globals, forp_globals)
-//PHP_INI_END()
-/* }}} */
-
-/* {{{ PHP_GINIT_FUNCTION
- */
-/*
-static void php_forp_init_globals(zend_forp_globals *forp_globals)
-{
-	forp_globals->enabled = 0;
-	forp_globals->max_nesting_level = 10;
-	forp_globals->no_internal = 1;
-	forp_globals->stack_len = 0;
-	forp_globals->nesting_level = 0;
-	forp_globals->dump = NULL;
-	forp_globals->stack = NULL;
-	forp_globals->main = NULL;
-	forp_globals->current_node = NULL;
-}
-*/
-/* }}} */
-
-/* {{{ PHP_MSHUTDOWN_FUNCTION
- */
-PHP_MSHUTDOWN_FUNCTION(forp) {
-    return SUCCESS;
-}
-/* }}} */
-
-/* {{{ PHP_MINFO_FUNCTION
- */
-PHP_MINFO_FUNCTION(forp) {
-    forp_info();
-}
-/* }}} */
-
-/* {{{ forp_info
- */
-ZEND_FUNCTION(forp_info) {
-    php_info_print_style(TSRMLS_C);
-    forp_info();
-}
-/* }}} */
-
-/* {{{ PHP_MINIT_FUNCTION
- */
-PHP_MINIT_FUNCTION(forp) {
-    
-    // FIXME W32
-    //REGISTER_LONG_CONSTANT("FORP_MEMORY", FORP_MEMORY, CONST_CS | CONST_PERSISTENT);
-    //REGISTER_LONG_CONSTANT("FORP_CPU", FORP_CPU, CONST_CS | CONST_PERSISTENT);
-
-    // Inits forp globals
-    forp_globals.enabled = 0;
-    forp_globals.max_nesting_level = 10;
-    forp_globals.no_internal = 0;
-
-    return SUCCESS;
-}
-/* }}} */
-
-/* {{{ PHP_RSHUTDOWN_FUNCTION
- */
-PHP_RSHUTDOWN_FUNCTION(forp) {
-
-    // Restores zend api methods
-    if (old_execute) {
-        zend_execute = old_execute;
-        old_execute = NULL;
-    }
-    if (!forp_globals.no_internal) {
-        zend_compile_file = old_compile_file;
-        zend_execute_internal = old_execute_internal;
-    }
-    return SUCCESS;
-}
-/* }}} */
-
-/* {{{ ZEND_MODULE_POST_ZEND_DEACTIVATE_D
- */
-ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp) {
-    forp_globals.nesting_level = 0;
-    forp_globals.current_node = NULL;
-
-    // Freeing
-    if (forp_globals.stack) {
-        int i;
-        for (i = 0; i < forp_globals.stack_len; ++i) {
-            efree(forp_globals.stack[i]);
-        }
-        if (i) efree(forp_globals.stack);
-    }
-    forp_globals.stack_len = 0;
-    forp_globals.stack = NULL;
-
-    if (forp_globals.dump) zval_ptr_dtor(&forp_globals.dump);
-    forp_globals.dump = NULL;
-    return SUCCESS;
-}
-/* }}} */
-
-/* {{{ forp_enable
- */
-ZEND_FUNCTION(forp_enable) {
-    long opt = 1;//FORP_MEMORY | FORP_CPU;
-    //if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &opt) == FAILURE) {
-    //    return;
-    //}
-    forp_globals.enabled = opt;
-    if (forp_globals.enabled) {
-        // Proxying zend api methods
-        old_execute = zend_execute;
-        zend_execute = forp_execute;
-        if (!forp_globals.no_internal) {
-            old_compile_file = zend_compile_file;
-            zend_compile_file = forp_compile_file;
-
-            old_execute_internal = zend_execute_internal;
-            zend_execute_internal = forp_execute_internal;
-        }
-        forp_globals.main = forp_begin(NULL, NULL TSRMLS_CC);
-    }
-}
-/* }}} */
-
-
-/* {{{ forp_dump
- */
-ZEND_FUNCTION(forp_dump) {
-
-    if (forp_globals.enabled) {
-        if (!forp_globals.dump) {
-            forp_end(forp_globals.main TSRMLS_CC);
-            forp_stack_dump(TSRMLS_C);
-        }
-    } else {
-        php_error_docref(
-                NULL TSRMLS_CC,
-                E_NOTICE,
-                "forp_dump() has no effect when forp_enable is turned off."
-                );
-    }
-
-    RETURN_ZVAL(forp_globals.dump, 1, 0);
-}
-/* }}} */
-
-/* {{{ forp_print
- */
-ZEND_FUNCTION(forp_print) {
-    if (forp_globals.enabled) {
-        forp_end(forp_globals.main TSRMLS_CC);
-        forp_stack_dump_cli(TSRMLS_C);
-    } else {
-        php_error_docref(
-                NULL TSRMLS_CC,
-                E_NOTICE,
-                "forp_print() has no effect when forp_enable is turned off."
-                );
-    }
-}
-/* }}} */
 
 /* {{{ forp_populate_function
  */
@@ -346,20 +134,20 @@ forp_node_t *forp_begin(zend_execute_data *edata, zend_op_array *op_array TSRMLS
     int key;
 
     pn = emalloc(sizeof (forp_node_t));
-    pn->level = forp_globals.nesting_level++;
-    pn->parent = forp_globals.current_node;
+    pn->level = FORP_G(nesting_level)++;
+    pn->parent = FORP_G(current_node);
 
     forp_populate_function(&(pn->function), edata, op_array TSRMLS_CC);
 
-    forp_globals.current_node = pn;
-    key = forp_globals.stack_len;
+    FORP_G(current_node) = pn;
+    key = FORP_G(stack_len);
     pn->key = key;
-    forp_globals.stack_len++;
-    forp_globals.stack = erealloc(
-            forp_globals.stack,
-            forp_globals.stack_len * sizeof (forp_node_t)
+    FORP_G(stack_len)++;
+    FORP_G(stack) = erealloc(
+            FORP_G(stack),
+            FORP_G(stack_len) * sizeof (forp_node_t)
             );
-    forp_globals.stack[key] = pn;
+    FORP_G(stack)[key] = pn;
 
     gettimeofday(&tv, NULL);
     pn->time_begin = tv.tv_sec * 1000000.0 + tv.tv_usec;
@@ -400,8 +188,8 @@ void forp_end(forp_node_t *pn TSRMLS_DC) {
     pn->time_end = tv.tv_sec * 1000000.0 + tv.tv_usec;
     pn->time = pn->time_end - pn->time_begin;
 
-    forp_globals.current_node = pn->parent;
-    forp_globals.nesting_level--;
+    FORP_G(current_node) = pn->parent;
+    FORP_G(nesting_level)--;
 }
 /* }}} */
 
@@ -410,7 +198,7 @@ void forp_end(forp_node_t *pn TSRMLS_DC) {
 void forp_execute(zend_op_array *op_array TSRMLS_DC) {
     forp_node_t *pn;
 
-    if (forp_globals.nesting_level > forp_globals.max_nesting_level) {
+    if (FORP_G(nesting_level) > FORP_G(max_nesting_level)) {
         old_execute(op_array TSRMLS_CC);
     } else {
         pn = forp_begin(EG(current_execute_data), op_array TSRMLS_CC);
@@ -425,7 +213,7 @@ void forp_execute(zend_op_array *op_array TSRMLS_DC) {
 void forp_execute_internal(zend_execute_data *current_execute_data, int ret TSRMLS_DC) {
     forp_node_t *pn;
 
-    if (forp_globals.nesting_level > forp_globals.max_nesting_level) {
+    if (FORP_G(nesting_level) > FORP_G(max_nesting_level)) {
         execute_internal(current_execute_data, ret TSRMLS_CC);
     } else {
         pn = forp_begin(EG(current_execute_data), NULL TSRMLS_CC);
@@ -445,13 +233,13 @@ void forp_stack_dump(TSRMLS_D) {
     int i;
     zval *t;
 
-    MAKE_STD_ZVAL(forp_globals.dump);
-    array_init(forp_globals.dump);
+    MAKE_STD_ZVAL(FORP_G(dump));
+    array_init(FORP_G(dump));
 
-    for (i = 0; i < forp_globals.stack_len; ++i) {
+    for (i = 0; i < FORP_G(stack_len); ++i) {
         forp_node_t *pn;
 
-        pn = forp_globals.stack[i];
+        pn = FORP_G(stack)[i];
 
         if (strstr(FORP_SKIP, pn->function.function)) {
             continue;
@@ -483,7 +271,7 @@ void forp_stack_dump(TSRMLS_D) {
         // {main} don't have parent
         if (pn->parent) add_assoc_long(t, FORP_DUMP_ASSOC_PARENT, pn->parent->key);
 
-        if (zend_hash_next_index_insert(Z_ARRVAL_P(forp_globals.dump), (void *) &t, sizeof (zval *), NULL) == FAILURE) {
+        if (zend_hash_next_index_insert(Z_ARRVAL_P(FORP_G(dump)), (void *) &t, sizeof (zval *), NULL) == FAILURE) {
             return;
         }
     }
@@ -514,8 +302,8 @@ void forp_stack_dump_cli_node(forp_node_t *node TSRMLS_DC) {
 void forp_stack_dump_cli(TSRMLS_D) {
     int i;
     php_printf("-----------------------------------------------------------------------------------------------------------%s", PHP_EOL);
-    for (i = 0; i < forp_globals.stack_len; ++i) {
-        forp_stack_dump_cli_node(forp_globals.stack[i] TSRMLS_CC);
+    for (i = 0; i < FORP_G(stack_len); ++i) {
+        forp_stack_dump_cli_node(FORP_G(stack)[i] TSRMLS_CC);
     }
     php_printf("-----------------------------------------------------------------------------------------------------------%s", PHP_EOL);
 }

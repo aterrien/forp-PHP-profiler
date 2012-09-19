@@ -58,11 +58,7 @@ PHP_FUNCTION(forp_dump);
 PHP_FUNCTION(forp_print);
 PHP_FUNCTION(forp_info);
 
-/*
-	Declare any global variables you may need between the BEGIN
-	and END macros here:
-*/
-/*
+/* global variables */
 ZEND_BEGIN_MODULE_GLOBALS(forp)
 	int enabled;
 	long nesting_level;
@@ -82,7 +78,6 @@ ZEND_DECLARE_MODULE_GLOBALS(forp);
 #else
 #define FORP_G(v) (forp_globals.v)
 #endif
-*/
 
 #endif	/* PHP_FORP_H */
 
