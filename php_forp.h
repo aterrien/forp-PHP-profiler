@@ -68,10 +68,8 @@ ZEND_BEGIN_MODULE_GLOBALS(forp)
 	forp_node_t **stack;
 	zval *dump;
 	long max_nesting_level;
-	int no_internal;
+	int no_internals;
 ZEND_END_MODULE_GLOBALS(forp)
-
-ZEND_DECLARE_MODULE_GLOBALS(forp);
 
 #ifdef ZTS
 #define FORP_G(v) TSRMG(forp_globals_id, zend_forp_globals *, v)

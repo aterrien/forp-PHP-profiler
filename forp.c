@@ -38,6 +38,8 @@ static inline double round(double val) {
 #include <stdio.h>
 #include <sys/resource.h>
 
+ZEND_DECLARE_MODULE_GLOBALS(forp);
+
 /* {{{ forp_populate_function
  */
 static void forp_populate_function(
@@ -160,7 +162,7 @@ forp_node_t *forp_begin(zend_execute_data *edata, zend_op_array *op_array TSRMLS
 
 /* {{{ forp_info
  */
-void forp_info() {
+void forp_info(TSRMLS_D) {
     php_info_print_table_start();
     php_info_print_table_row(2, "Version", FORP_VERSION);
     php_info_print_table_end();

@@ -28,6 +28,8 @@
 #include "ext/standard/info.h"
 #include "zend_exceptions.h"
 
+ZEND_DECLARE_MODULE_GLOBALS(forp);
+
 /* {{{ forp_functions[]
  *
  * Every user visible function must have an entry in forp_functions[].
@@ -57,7 +59,9 @@ zend_module_entry forp_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
     FORP_VERSION,
 #endif
+#if (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION >= 2) || PHP_MAJOR_VERSION >= 6
     NO_MODULE_GLOBALS,
+#endif
     /*PHP_GINIT(forp), PHP_GSHUTDOWN(forp),*/
     ZEND_MODULE_POST_ZEND_DEACTIVATE_N(forp),
     STANDARD_MODULE_PROPERTIES_EX
@@ -71,9 +75,9 @@ ZEND_GET_MODULE(forp)
 /* {{{ PHP_INI
  */
 PHP_INI_BEGIN()
-	STD_PHP_INI_BOOLEAN("forp.enable", "0", PHP_INI_ALL, OnUpdateBool, enabled, zend_forp_globals, forp_globals)
-	STD_PHP_INI_ENTRY("forp.max_nesting_level", "10", PHP_INI_ALL, OnUpdateLong, max_nesting_level, zend_forp_globals, forp_globals)
-	STD_PHP_INI_BOOLEAN("forp.no_internal", "1", PHP_INI_ALL, OnUpdateBool, no_internal, zend_forp_globals, forp_globals)
+    STD_PHP_INI_BOOLEAN("forp.enable", "0", PHP_INI_ALL, OnUpdateBool, enabled, zend_forp_globals, forp_globals)
+    STD_PHP_INI_ENTRY("forp.max_nesting_level", "10", PHP_INI_ALL, OnUpdateLong, max_nesting_level, zend_forp_globals, forp_globals)
+    STD_PHP_INI_BOOLEAN("forp.no_internals", "0", PHP_INI_ALL, OnUpdateBool, no_internals, zend_forp_globals, forp_globals)
 PHP_INI_END()
 /* }}} */
 
@@ -83,7 +87,7 @@ static void php_forp_init_globals(zend_forp_globals *forp_globals)
 {
 	forp_globals->enabled = 0;
 	forp_globals->max_nesting_level = 10;
-	forp_globals->no_internal = 1;
+	forp_globals->no_internals = 0;
 	forp_globals->stack_len = 0;
 	forp_globals->nesting_level = 0;
 	forp_globals->dump = NULL;
@@ -104,6 +108,7 @@ PHP_MSHUTDOWN_FUNCTION(forp) {
  */
 PHP_MINFO_FUNCTION(forp) {
     forp_info();
+    DISPLAY_INI_ENTRIES();
 }
 /* }}} */
 
@@ -111,7 +116,7 @@ PHP_MINFO_FUNCTION(forp) {
  */
 ZEND_FUNCTION(forp_info) {
     php_info_print_style(TSRMLS_C);
-    forp_info();
+    forp_info(TSRMLS_C);
 }
 /* }}} */
 
@@ -121,14 +126,11 @@ PHP_MINIT_FUNCTION(forp) {
 
     ZEND_INIT_MODULE_GLOBALS(forp, php_forp_init_globals, NULL);
 
+    REGISTER_INI_ENTRIES();
+
     // FIXME W32
     //REGISTER_LONG_CONSTANT("FORP_MEMORY", FORP_MEMORY, CONST_CS | CONST_PERSISTENT);
     //REGISTER_LONG_CONSTANT("FORP_CPU", FORP_CPU, CONST_CS | CONST_PERSISTENT);
-
-    // Inits forp globals
-    FORP_G(enabled) = 0;
-    FORP_G(max_nesting_level) = 10;
-    FORP_G(no_internal) = 0;
 
     return SUCCESS;
 }
@@ -143,7 +145,7 @@ PHP_RSHUTDOWN_FUNCTION(forp) {
         zend_execute = old_execute;
         old_execute = NULL;
     }
-    if (!FORP_G(no_internal)) {
+    if (!FORP_G(no_internals)) {
         zend_compile_file = old_compile_file;
         zend_execute_internal = old_execute_internal;
     }
@@ -190,7 +192,7 @@ ZEND_FUNCTION(forp_enable) {
         // Proxying zend api methods
         old_execute = zend_execute;
         zend_execute = forp_execute;
-        if (!FORP_G(no_internal)) {
+        if (!FORP_G(no_internals)) {
             old_compile_file = zend_compile_file;
             zend_compile_file = forp_compile_file;
 
