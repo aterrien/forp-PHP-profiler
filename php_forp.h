@@ -19,17 +19,18 @@
 #ifndef PHP_FORP_H
 #define PHP_FORP_H
 
-#define FORP_VERSION                    "0.0.1"
-#define FORP_SKIP                       "|forp_dump|forp_print|"
-#define FORP_DUMP_ASSOC_FILE            "file"
-#define FORP_DUMP_ASSOC_CLASS           "class"
-#define FORP_DUMP_ASSOC_FUNCTION        "function"
-#define FORP_DUMP_ASSOC_CPU             "usec"
-#define FORP_DUMP_ASSOC_MEMORY          "bytes"
-#define FORP_DUMP_ASSOC_LEVEL           "level"
-#define FORP_DUMP_ASSOC_PARENT          "parent"
-#define FORP_CPU                        1
-#define FORP_MEMORY                     2
+#define FORP_VERSION                "0.0.1"
+#define FORP_SKIP                   "|forp_dump|forp_print|"
+#define FORP_DUMP_ASSOC_FILE		"file"
+#define FORP_DUMP_ASSOC_CLASS		"class"
+#define FORP_DUMP_ASSOC_FUNCTION	"function"
+#define FORP_DUMP_ASSOC_LINENO      "lineno"
+#define FORP_DUMP_ASSOC_CPU         "usec"
+#define FORP_DUMP_ASSOC_MEMORY		"bytes"
+#define FORP_DUMP_ASSOC_LEVEL		"level"
+#define FORP_DUMP_ASSOC_PARENT		"parent"
+#define FORP_CPU                    0x0001
+#define FORP_MEMORY                 0x0002
 
 extern zend_module_entry forp_module_entry;
 #define phpext_forp_ptr &forp_module_entry
@@ -42,7 +43,6 @@ extern zend_module_entry forp_module_entry;
 #define PHP_FORP_API
 #endif
 
-#include "forp.h"
 #ifdef ZTS
 #include "TSRM.h"
 #endif
@@ -58,33 +58,18 @@ PHP_FUNCTION(forp_dump);
 PHP_FUNCTION(forp_print);
 PHP_FUNCTION(forp_info);
 
-/* 
-	Declare any global variables you may need between the BEGIN
-	and END macros here:     
- */
+/* global variables */
 ZEND_BEGIN_MODULE_GLOBALS(forp)
-	int enable;
+	int enabled;
 	long nesting_level;
-	forp_node *main;
-	forp_node *current_node;
+	forp_node_t *main;
+	forp_node_t *current_node;
 	int stack_len;
-	forp_node **stack;
+	forp_node_t **stack;
 	zval *dump;
 	long max_nesting_level;
-	int no_internal;
+	int no_internals;
 ZEND_END_MODULE_GLOBALS(forp)
-
-ZEND_DECLARE_MODULE_GLOBALS(forp);
-
-/* In every utility function you add that needs to use variables 
-   in php_forp_globals, call TSRMLS_FETCH(); after declaring other 
-   variables used by that function, or better yet, pass in TSRMLS_CC
-   after the last function argument and declare your utility function
-   with TSRMLS_DC after the last declared argument.  Always refer to
-   the globals in your function as FORP_G(variable).  You are 
-   encouraged to rename these macros something shorter, see
-   examples in any other php module directory.
- */
 
 #ifdef ZTS
 #define FORP_G(v) TSRMG(forp_globals_id, zend_forp_globals *, v)
