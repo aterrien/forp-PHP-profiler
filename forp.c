@@ -38,8 +38,6 @@ static inline double round(double val) {
 #include <stdio.h>
 #include <sys/resource.h>
 
-ZEND_DECLARE_MODULE_GLOBALS(forp);
-
 /* {{{ forp_populate_function
  */
 static void forp_populate_function(
@@ -138,6 +136,12 @@ forp_node_t *forp_begin(zend_execute_data *edata, zend_op_array *op_array TSRMLS
     pn = emalloc(sizeof (forp_node_t));
     pn->level = FORP_G(nesting_level)++;
     pn->parent = FORP_G(current_node);
+    pn->time_begin = 0;
+    pn->time_end = 0;
+    pn->time = 0;
+    pn->mem_begin = 0;
+    pn->mem_end = 0;
+    pn->mem = 0;
 
     forp_populate_function(&(pn->function), edata, op_array TSRMLS_CC);
 
@@ -151,10 +155,14 @@ forp_node_t *forp_begin(zend_execute_data *edata, zend_op_array *op_array TSRMLS
             );
     FORP_G(stack)[key] = pn;
 
-    gettimeofday(&tv, NULL);
-    pn->time_begin = tv.tv_sec * 1000000.0 + tv.tv_usec;
+    if(FORP_G(flags) & FORP_FLAG_CPU) {
+        gettimeofday(&tv, NULL);
+        pn->time_begin = tv.tv_sec * 1000000.0 + tv.tv_usec;
+    }
 
-    pn->mem_begin = zend_memory_usage(0 TSRMLS_CC);
+    if(FORP_G(flags) & FORP_FLAG_MEMORY) {
+        pn->mem_begin = zend_memory_usage(0 TSRMLS_CC);
+    }
 
     return pn;
 }
@@ -183,12 +191,16 @@ void forp_end(forp_node_t *pn TSRMLS_DC) {
     struct timeval tv;
 
     // dump memory before next steps
-    pn->mem_end = zend_memory_usage(0 TSRMLS_CC);
-    pn->mem = pn->mem_end - pn->mem_begin;
+    if(FORP_G(flags) & FORP_FLAG_MEMORY) {
+        pn->mem_end = zend_memory_usage(0 TSRMLS_CC);
+        pn->mem = pn->mem_end - pn->mem_begin;
+    }
 
-    gettimeofday(&tv, NULL);
-    pn->time_end = tv.tv_sec * 1000000.0 + tv.tv_usec;
-    pn->time = pn->time_end - pn->time_begin;
+    if(FORP_G(flags) & FORP_FLAG_CPU) {
+        gettimeofday(&tv, NULL);
+        pn->time_end = tv.tv_sec * 1000000.0 + tv.tv_usec;
+        pn->time = pn->time_end - pn->time_begin;
+    }
 
     FORP_G(current_node) = pn->parent;
     FORP_G(nesting_level)--;
@@ -263,11 +275,17 @@ void forp_stack_dump(TSRMLS_D) {
         if (pn->function.lineno)
             add_assoc_long(t, FORP_DUMP_ASSOC_LINENO, pn->function.lineno);
 
-        zval *time;
-        MAKE_STD_ZVAL(time);
-        ZVAL_DOUBLE(time, round(pn->time * 1000000.0) / 1000000.0);
-        add_assoc_zval(t, FORP_DUMP_ASSOC_CPU, time);
-        add_assoc_long(t, FORP_DUMP_ASSOC_MEMORY, pn->mem);
+        if(FORP_G(flags) & FORP_FLAG_CPU) {
+            zval *time;
+            MAKE_STD_ZVAL(time);
+            ZVAL_DOUBLE(time, round(pn->time * 1000000.0) / 1000000.0);
+            add_assoc_zval(t, FORP_DUMP_ASSOC_CPU, time);
+        }
+
+        if(FORP_G(flags) & FORP_FLAG_MEMORY) {
+            add_assoc_long(t, FORP_DUMP_ASSOC_MEMORY, pn->mem);
+        }
+
         add_assoc_long(t, FORP_DUMP_ASSOC_LEVEL, pn->level);
 
         // {main} don't have parent
@@ -289,7 +307,12 @@ void forp_stack_dump_cli_node(forp_node_t *node TSRMLS_DC) {
         return;
     }
 
-    php_printf("[time:%09.0f] [memory:%09d] ", node->time, node->mem);
+    if(FORP_G(flags) & FORP_FLAG_CPU) {
+        php_printf("[time:%09.0f] ", node->time);
+    }
+    if(FORP_G(flags) & FORP_FLAG_MEMORY) {
+        php_printf("[memory:%09d] ", node->mem);
+    }
     for (j = 0; j < node->level; ++j) {
         if (j == node->level - 1) php_printf(" └── ");
         else php_printf(" |   ");
