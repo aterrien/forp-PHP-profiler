@@ -19,7 +19,7 @@ Sets a group that function belongs.
 
 ```php
 /**
- * @ProfileGroup("DB query")
+ * @ProfileGroup("Database")
  */
 function exec($query) {
     /* ... */
