@@ -24,13 +24,14 @@
 #include "TSRM.h"
 #endif
 
-/* structures */
 typedef struct forp_function_t {
     char *filename;
     char *class;
     char *function;
     int lineno;
     int type;
+    char *group;
+    char *caption;
 } forp_function_t;
 
 typedef struct forp_node_t {
@@ -45,7 +46,7 @@ typedef struct forp_node_t {
     signed long mem_begin;
     signed long mem_end;
 
-    // CPU
+    // Duration
     double time;
     double time_begin;
     double time_end;

@@ -2,7 +2,7 @@ forp bench :
 - Silex fw no routed request
 - 50 concurrent, 5 times, no delay
      $ siege -b -c 50 -r 5 http://localhost/SilexTest/web/
-- VirtualBox on MBP Retina, Debian Squeeze, Apache 2.0, PHP 5.3.8
+- VirtualBox on MBP Retina : Debian Squeeze, Apache 2.0, PHP 5.3.8
 
       Date & Time,  Trans,  Elap Time,  Data Trans,  Resp Time,  Trans Rate,  Throughput,  Concurrent,    OKAY,   Failed
 

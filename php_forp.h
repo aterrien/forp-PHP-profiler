@@ -15,7 +15,6 @@
   | Author: Anthony Terrien <forp@anthonyterrien.com>                    |
   +----------------------------------------------------------------------+
  */
-
 #ifndef PHP_FORP_H
 #define PHP_FORP_H
 
@@ -29,8 +28,11 @@
 #define FORP_DUMP_ASSOC_MEMORY		"bytes"
 #define FORP_DUMP_ASSOC_LEVEL		"level"
 #define FORP_DUMP_ASSOC_PARENT		"parent"
+#define FORP_DUMP_ASSOC_GROUP       "group"
+#define FORP_DUMP_ASSOC_CAPTION     "caption"
 #define FORP_FLAG_CPU               0x0001
 #define FORP_FLAG_MEMORY            0x0002
+#define FORP_FLAG_ANNOTATION        0x0003
 
 extern zend_module_entry forp_module_entry;
 #define phpext_forp_ptr &forp_module_entry
