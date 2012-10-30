@@ -21,6 +21,9 @@ Sets a group that function belongs.
 /**
  * @ProfileGroup("DB query")
  */
+function exec($query) {
+    /* ... */
+}
 ```
 
 - @ProfileCaption
@@ -31,6 +34,9 @@ Adds caption to function. Caption string may contain references (#<param num>) t
 /**
  * @ProfileCaption("Find row for pk #1")
  */
+public function findByPk($pk) {
+    /* ... */
+}
 ```
 
 ## Linux Install ##
