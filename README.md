@@ -11,6 +11,28 @@ forp is a lightweight PHP extension which provides CPU and memory profiling data
 - forp_dump() : Array - forp stack
 - forp_print() : displays forp stack (CLI)
 
+## Function annotations  ##
+
+- @ProfileGroup
+
+Sets a group that function belongs.
+
+```php
+/**
+ * @ProfileGroup("DB query")
+ */
+```
+
+- @ProfileCaption
+
+Adds caption to function. Caption string may contain references (#<param num>) to parameters of the function.
+
+```php
+/**
+ * @ProfileCaption("Find row for pk #1")
+ */
+```
+
 ## Linux Install ##
 
 * make
