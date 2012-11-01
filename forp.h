@@ -24,6 +24,9 @@
 #include "TSRM.h"
 #endif
 
+#define FORP_NODE_TYPE_FUNCTION		0x0001
+#define FORP_NODE_TYPE_GROUP    	0x0002
+
 typedef struct forp_function_t {
     char *filename;
     char *class;
@@ -36,6 +39,7 @@ typedef struct forp_function_t {
 
 typedef struct forp_node_t {
     int key;
+    int type;
     forp_function_t function;
     int level;
     char *include_filename;

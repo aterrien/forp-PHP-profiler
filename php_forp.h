@@ -32,7 +32,7 @@
 #define FORP_DUMP_ASSOC_CAPTION     "caption"
 #define FORP_FLAG_CPU               0x0001
 #define FORP_FLAG_MEMORY            0x0002
-#define FORP_FLAG_ANNOTATION        0x0003
+#define FORP_FLAG_ANNOTATION        0x0004
 
 extern zend_module_entry forp_module_entry;
 #define phpext_forp_ptr &forp_module_entry
@@ -63,8 +63,8 @@ PHP_FUNCTION(forp_info);
 /* global variables */
 ZEND_BEGIN_MODULE_GLOBALS(forp)
 	int enabled;
-    long flags;
-	long nesting_level;
+    int flags;
+	int nesting_level;
 	forp_node_t *main;
 	forp_node_t *current_node;
 	int stack_len;
