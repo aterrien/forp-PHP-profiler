@@ -83,8 +83,8 @@ PHP_INI_END()
 static void php_forp_init_globals(zend_forp_globals *forp_globals)
 {
 	forp_globals->enabled = 0;
-	forp_globals->flags = FORP_FLAG_CPU | FORP_FLAG_MEMORY;
-	forp_globals->max_nesting_level = 10;
+	forp_globals->flags = FORP_FLAG_CPU | FORP_FLAG_MEMORY | FORP_FLAG_ANNOTATIONS;
+	forp_globals->max_nesting_level = 20;
 	forp_globals->no_internals = 0;
 	forp_globals->stack_len = 0;
 	forp_globals->nesting_level = 0;

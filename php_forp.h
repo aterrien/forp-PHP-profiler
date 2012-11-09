@@ -32,7 +32,7 @@
 #define FORP_DUMP_ASSOC_CAPTION     "caption"
 #define FORP_FLAG_CPU               0x0001
 #define FORP_FLAG_MEMORY            0x0002
-#define FORP_FLAG_ANNOTATION        0x0004
+#define FORP_FLAG_ANNOTATIONS       0x0004
 
 extern zend_module_entry forp_module_entry;
 #define phpext_forp_ptr &forp_module_entry

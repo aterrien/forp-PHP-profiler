@@ -34,16 +34,23 @@ typedef struct forp_function_t {
     int lineno;
     int type;
     char *group;
-    char *caption;
 } forp_function_t;
+
+
+//typedef struct forp_group_t {
+//    char *name;
+//} forp_group_t;
 
 typedef struct forp_node_t {
     int key;
-    int type;
-    forp_function_t function;
+    //int type;
     int level;
-    char *include_filename;
     struct forp_node_t *parent;
+    char *caption;
+
+    // Type node specific
+    //forp_group_t group;
+    forp_function_t function;
 
     // Memory
     signed long mem;

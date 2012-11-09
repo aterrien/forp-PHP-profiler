@@ -54,7 +54,7 @@ char *forp_annotation(char *doc_comment, char *tag TSRMLS_DC) {
         if (t_start) {
             v_start = t_start - doc_comment + strlen(v_search);
             tmp = strndup(doc_comment + v_start, strlen(doc_comment));
-            eot = strstr(tmp, "\")\n");
+            eot = strstr(tmp, "\")");
             v_end = eot - tmp;
             v = strndup(doc_comment + v_start, v_end);
         }
@@ -102,8 +102,8 @@ char *forp_substr_replace(char *subject, char *replace, unsigned int start, unsi
  * @return char*
  */
 char *forp_str_replace(char *search, char *replace, char *subject TSRMLS_DC) {
-    char *found = strstr(subject, search);
-    if(found) {
+    char *found;
+    while(found = strstr(subject, search)) {
         subject = forp_substr_replace(subject, replace, found - subject, strlen(search));
     }
     return subject;
@@ -123,19 +123,10 @@ static void forp_populate_function(
     function->function = NULL;
     function->filename = NULL;
     function->lineno = 0;
-    function->caption = NULL;
-    function->group = NULL;
 
-    // Retrieves filename
     if (op_array) {
+        // Retrieves filename
         function->filename = strdup(op_array->filename);
-
-        if((FORP_G(flags) & FORP_FLAG_ANNOTATION) && op_array->doc_comment) {
-            function->caption =
-                    forp_annotation(op_array->doc_comment, "ProfileCaption" TSRMLS_CC);
-            function->group =
-                    forp_annotation(op_array->doc_comment, "ProfileGroup" TSRMLS_CC);
-        }
     } else {
         if (edata->op_array) {
             function->filename = strdup(edata->op_array->filename);
@@ -194,67 +185,6 @@ static void forp_populate_function(
                 break;
         }
     }
-
-    // Collects params
-    if(function->caption) {
-        void **params;
-        int params_count;
-        int i;
-
-        // Retrieves params in global zend_vm_stack
-#if (PHP_MAJOR_VERSION == 5) && (PHP_MINOR_VERSION > 2)
-        params = EG(argument_stack)->top-1;
-#else
-        params = EG(argument_stack).top_element-1;
-#endif
-        params_count = (ulong) *params;
-
-        for(i = 1; i <= params_count; i++) {
-
-            char c[4];
-            char *v;
-
-            sprintf(c, "#%d", params_count - i + 1);
-
-            zval *expr;
-            expr = *((zval **) (params - i));
-
-            // Uses zend_make_printable_zval
-            zval expr_copy;
-            int use_copy;
-            zend_make_printable_zval(expr, &expr_copy, &use_copy);
-            if(use_copy) {
-                v = strdup((char*)(expr_copy).value.str.val);
-                zval_dtor(&expr_copy);
-            } else {
-                v = strdup((char*)(*expr).value.str.val);
-            }
-            /*switch(Z_TYPE_P(expr)) {
-                case IS_STRING :
-                    v = strdup((char*)(*expr).value.str.val);
-                    break;
-                case IS_DOUBLE :
-                    //convert_to_string
-                    break;
-                case IS_OBJECT :
-                    v = "(Object)";
-                    break;
-                case IS_ARRAY :
-                    v = "(Array)";
-                    break;
-                case IS_RESOURCE :
-                    v = "(Resource)";
-                    break;
-                default :
-                    v = "(not a string)";
-            }*/
-
-            function->caption = forp_str_replace(
-                c, v,
-                function->caption TSRMLS_CC
-            );
-        }
-    }
 }
 /* }}} */
 
@@ -265,18 +195,100 @@ forp_node_t *forp_begin(zend_execute_data *edata, zend_op_array *op_array TSRMLS
     forp_node_t *n;
     int key;
 
+    // Inits node
     n = emalloc(sizeof (forp_node_t));
+    //n->type = FORP_NODE_TYPE_FUNCTION;
+
     n->level = FORP_G(nesting_level)++;
     n->parent = FORP_G(current_node);
+
     n->time_begin = 0;
     n->time_end = 0;
     n->time = 0;
+
     n->mem_begin = 0;
     n->mem_end = 0;
     n->mem = 0;
 
+    // First thing to do, handle node annotations to know what to do
+    if((FORP_G(flags) & FORP_FLAG_ANNOTATIONS) && op_array && op_array->doc_comment) {
+
+        // Caption
+        n->caption = forp_annotation(op_array->doc_comment, "ProfileCaption" TSRMLS_CC);
+
+        // Group
+        n->function.group = forp_annotation(op_array->doc_comment, "ProfileGroup" TSRMLS_CC);
+
+    } else {
+        n->caption = NULL;
+        n->function.group = NULL;
+    }
+
+    // Node of type function
     if(edata) {
         forp_populate_function(&(n->function), edata, op_array TSRMLS_CC);
+
+        // Collects params
+        if(n->caption) {
+            void **params;
+            int params_count;
+            int i;
+
+            // Retrieves params in zend_vm_stack
+#if (PHP_MAJOR_VERSION == 5) && (PHP_MINOR_VERSION > 2)
+            params = EG(argument_stack)->top-1;
+#else
+            params = EG(argument_stack).top_element-1;
+#endif
+            params_count = (ulong) *params;
+
+            for(i = 1; i <= params_count; i++) {
+
+                char c[4];
+                char *v;
+
+                sprintf(c, "#%d", params_count - i + 1);
+
+                zval *expr;
+                expr = *((zval **) (params - i));
+
+                // Uses zend_make_printable_zval
+                zval expr_copy;
+                int use_copy;
+                zend_make_printable_zval(expr, &expr_copy, &use_copy);
+                if(use_copy) {
+                    v = strdup((char*)(expr_copy).value.str.val);
+                    zval_dtor(&expr_copy);
+                } else {
+                    v = strdup((char*)(*expr).value.str.val);
+                }
+                /*switch(Z_TYPE_P(expr)) {
+                    case IS_STRING :
+                        v = strdup((char*)(*expr).value.str.val);
+                        break;
+                    case IS_DOUBLE :
+                        //convert_to_string
+                        break;
+                    case IS_OBJECT :
+                        v = "(Object)";
+                        break;
+                    case IS_ARRAY :
+                        v = "(Array)";
+                        break;
+                    case IS_RESOURCE :
+                        v = "(Resource)";
+                        break;
+                    default :
+                        v = "(not a string)";
+                }*/
+
+                n->caption = forp_str_replace(
+                    c, v,
+                    n->caption TSRMLS_CC
+                );
+            }
+        }
+
     } else {
         // Root node
         edata = EG(current_execute_data);
@@ -284,8 +296,6 @@ forp_node_t *forp_begin(zend_execute_data *edata, zend_op_array *op_array TSRMLS
         n->function.function = "{main}";
         n->function.filename = edata->op_array->filename;
         n->function.lineno = 0;
-        n->function.caption = NULL;
-        n->function.group = NULL;
     }
 
     FORP_G(current_node) = n;
@@ -421,8 +431,8 @@ void forp_stack_dump(TSRMLS_D) {
         if (n->function.group)
             add_assoc_string(t, FORP_DUMP_ASSOC_GROUP, n->function.group, 1);
 
-        if (n->function.caption)
-            add_assoc_string(t, FORP_DUMP_ASSOC_CAPTION, n->function.caption, 1);
+        if (n->caption)
+            add_assoc_string(t, FORP_DUMP_ASSOC_CAPTION, n->caption, 1);
 
         if(FORP_G(flags) & FORP_FLAG_CPU) {
             zval *time;
@@ -438,7 +448,8 @@ void forp_stack_dump(TSRMLS_D) {
         add_assoc_long(t, FORP_DUMP_ASSOC_LEVEL, n->level);
 
         // {main} don't have parent
-        if (n->parent) add_assoc_long(t, FORP_DUMP_ASSOC_PARENT, n->parent->key);
+        if (n->parent)
+            add_assoc_long(t, FORP_DUMP_ASSOC_PARENT, n->parent->key);
 
         if (zend_hash_next_index_insert(Z_ARRVAL_P(FORP_G(dump)), (void *) &t, sizeof (zval *), NULL) == FAILURE) {
             return;
