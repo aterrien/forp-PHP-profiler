@@ -15,7 +15,6 @@
   | Author: Anthony Terrien <forp@anthonyterrien.com>                    |
   +----------------------------------------------------------------------+
  */
-
 #ifndef PHP_FORP_H
 #define PHP_FORP_H
 
@@ -29,8 +28,11 @@
 #define FORP_DUMP_ASSOC_MEMORY		"bytes"
 #define FORP_DUMP_ASSOC_LEVEL		"level"
 #define FORP_DUMP_ASSOC_PARENT		"parent"
-#define FORP_CPU                    0x0001
-#define FORP_MEMORY                 0x0002
+#define FORP_DUMP_ASSOC_GROUP       "group"
+#define FORP_DUMP_ASSOC_CAPTION     "caption"
+#define FORP_FLAG_CPU               0x0001
+#define FORP_FLAG_MEMORY            0x0002
+#define FORP_FLAG_ANNOTATIONS       0x0004
 
 extern zend_module_entry forp_module_entry;
 #define phpext_forp_ptr &forp_module_entry
@@ -61,7 +63,8 @@ PHP_FUNCTION(forp_info);
 /* global variables */
 ZEND_BEGIN_MODULE_GLOBALS(forp)
 	int enabled;
-	long nesting_level;
+    int flags;
+	int nesting_level;
 	forp_node_t *main;
 	forp_node_t *current_node;
 	int stack_len;
@@ -70,6 +73,8 @@ ZEND_BEGIN_MODULE_GLOBALS(forp)
 	long max_nesting_level;
 	int no_internals;
 ZEND_END_MODULE_GLOBALS(forp)
+
+ZEND_DECLARE_MODULE_GLOBALS(forp);
 
 #ifdef ZTS
 #define FORP_G(v) TSRMG(forp_globals_id, zend_forp_globals *, v)

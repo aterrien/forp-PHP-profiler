@@ -1,4 +1,4 @@
-/*
+ /*
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
@@ -35,10 +35,80 @@ static inline double round(double val) {
 }
 #endif
 
-#include <stdio.h>
-#include <sys/resource.h>
+/* {{{ forp_annotation
+ *
+ * Handles annotations in doc_comment : @<tag>("<value>")<\n>
+ *
+ * @param char* doc_comment
+ * @param char* tag
+ * @return char*
+ */
+char *forp_annotation(char *doc_comment, char *tag TSRMLS_DC) {
+    char *v = NULL, *v_search = NULL, *t_start = NULL, *tmp = NULL, *eot = NULL;
+    unsigned int v_start, v_end;
 
-ZEND_DECLARE_MODULE_GLOBALS(forp);
+    v_search = emalloc(sizeof(char*) * (strlen(tag) + 3));
+    if(v_search) {
+        sprintf(v_search, "@%s(\"", tag);
+        t_start = strstr(doc_comment, v_search);
+        if (t_start) {
+            v_start = t_start - doc_comment + strlen(v_search);
+            tmp = strndup(doc_comment + v_start, strlen(doc_comment));
+            eot = strstr(tmp, "\")");
+            v_end = eot - tmp;
+            v = strndup(doc_comment + v_start, v_end);
+        }
+        efree(v_search);
+    }
+    return v;
+}
+/* }}} */
+
+/* {{{ forp_substr_replace
+ *
+ * @param char* subject
+ * @param uint start
+ * @param uint len
+ * @param char* replace
+ * @return char*
+ */
+char *forp_substr_replace(char *subject, char *replace, unsigned int start, unsigned int len)
+{
+   char *ns = NULL;
+   size_t size;
+   if (
+        subject != NULL && replace != NULL
+        && start >= 0 && len > 0
+   ) {
+      size = strlen(subject);
+      ns = emalloc(sizeof(*ns) * (size - len + strlen(replace) + 1));
+      if(ns) {
+         memcpy(ns, subject, start);
+         memcpy(&ns[start], replace, strlen(replace));
+         memcpy(&ns[start + strlen(replace)], &subject[start + len], size - len - start + 1);
+      }
+      subject = strdup(ns);
+      efree(ns);
+   }
+   return subject;
+}
+/* }}} */
+
+/* {{{ forp_str_replace
+ *
+ * @param char* search
+ * @param char* replace
+ * @param char* subject
+ * @return char*
+ */
+char *forp_str_replace(char *search, char *replace, char *subject TSRMLS_DC) {
+    char *found;
+    while(found = strstr(subject, search)) {
+        subject = forp_substr_replace(subject, replace, found - subject, strlen(search));
+    }
+    return subject;
+}
+/* }}} */
 
 /* {{{ forp_populate_function
  */
@@ -54,76 +124,66 @@ static void forp_populate_function(
     function->filename = NULL;
     function->lineno = 0;
 
-    if (edata) {
-
+    if (op_array) {
         // Retrieves filename
-        if (op_array) {
-            function->filename = strdup(op_array->filename);
+        function->filename = strdup(op_array->filename);
+    } else {
+        if (edata->op_array) {
+            function->filename = strdup(edata->op_array->filename);
         } else {
-            if (edata->op_array) {
-                function->filename = strdup(edata->op_array->filename);
-            } else {
-                function->filename = "";
-            }
+            function->filename = "";
         }
+    }
 
-        // Retrieves call lineno
-        if(edata->opline) {
-            function->lineno = edata->opline->lineno;
-        }
-        // func proto lineno
-        // if (edata->function_state.function->common.type!=ZEND_INTERNAL_FUNCTION) {
-        //    function->lineno = edata->function_state.function->op_array.opcodes->lineno - 1;
-        // }
+    // Retrieves call lineno
+    if(edata->opline) {
+        function->lineno = edata->opline->lineno;
+    }
+    // func proto lineno
+    // if (edata->function_state.function->common.type!=ZEND_INTERNAL_FUNCTION) {
+    //    function->lineno = edata->function_state.function->op_array.opcodes->lineno - 1;
+    // }
 
-        // Retrieves class and function names
-        if (edata->function_state.function->common.function_name) {
-            if (edata->object) {
-                if (edata->function_state.function->common.scope) {
-                    function->class = strdup(edata->function_state.function->common.scope->name);
-                }
-            } else if (
-                    EG(scope)
-                    && edata->function_state.function->common.scope
-                    && edata->function_state.function->common.scope->name
-                    ) {
+    // Retrieves class and function names
+    if (edata->function_state.function->common.function_name) {
+        if (edata->object) {
+            if (edata->function_state.function->common.scope) {
                 function->class = strdup(edata->function_state.function->common.scope->name);
             }
-
-            function->function = strdup(edata->function_state.function->common.function_name);
-        } else {
-#if PHP_VERSION_ID >= 50399
-            switch (function->type = edata->opline->extended_value) {
-#else
-            switch (function->type = edata->opline->op2.u.constant.value.lval) {
-#endif
-                case ZEND_EVAL:
-                    function->function = "eval";
-                    break;
-                case ZEND_INCLUDE:
-                    function->function = "include";
-                    break;
-                case ZEND_REQUIRE:
-                    function->function = "require";
-                    break;
-                case ZEND_INCLUDE_ONCE:
-                    function->function = "include_once";
-                    break;
-                case ZEND_REQUIRE_ONCE:
-                    function->function = "require_once";
-                    break;
-                default:
-                    function->function = "unknown";
-                    break;
-            }
+        } else if (
+                EG(scope)
+                && edata->function_state.function->common.scope
+                && edata->function_state.function->common.scope->name
+                ) {
+            function->class = strdup(edata->function_state.function->common.scope->name);
         }
-    } else {
 
-        // Root node
-        edata = EG(current_execute_data);
-        function->class = NULL;
-        function->function = "{main}";
-        function->filename = edata->op_array->filename;
+        function->function = strdup(edata->function_state.function->common.function_name);
+    } else {
+#if PHP_VERSION_ID >= 50399
+        switch (function->type = edata->opline->extended_value) {
+#else
+        switch (function->type = edata->opline->op2.u.constant.value.lval) {
+#endif
+            case ZEND_EVAL:
+                function->function = "eval";
+                break;
+            case ZEND_INCLUDE:
+                function->function = "include";
+                break;
+            case ZEND_REQUIRE:
+                function->function = "require";
+                break;
+            case ZEND_INCLUDE_ONCE:
+                function->function = "include_once";
+                break;
+            case ZEND_REQUIRE_ONCE:
+                function->function = "require_once";
+                break;
+            default:
+                function->function = "unknown";
+                break;
+        }
     }
 }
 /* }}} */
@@ -132,31 +192,132 @@ static void forp_populate_function(
  */
 forp_node_t *forp_begin(zend_execute_data *edata, zend_op_array *op_array TSRMLS_DC) {
     struct timeval tv;
-    forp_node_t *pn;
+    forp_node_t *n;
     int key;
 
-    pn = emalloc(sizeof (forp_node_t));
-    pn->level = FORP_G(nesting_level)++;
-    pn->parent = FORP_G(current_node);
+    // Inits node
+    n = emalloc(sizeof (forp_node_t));
+    //n->type = FORP_NODE_TYPE_FUNCTION;
 
-    forp_populate_function(&(pn->function), edata, op_array TSRMLS_CC);
+    n->level = FORP_G(nesting_level)++;
+    n->parent = FORP_G(current_node);
 
-    FORP_G(current_node) = pn;
+    n->time_begin = 0;
+    n->time_end = 0;
+    n->time = 0;
+
+    n->mem_begin = 0;
+    n->mem_end = 0;
+    n->mem = 0;
+
+    // First thing to do, handle node annotations to know what to do
+    if((FORP_G(flags) & FORP_FLAG_ANNOTATIONS) && op_array && op_array->doc_comment) {
+
+        // Caption
+        n->caption = forp_annotation(op_array->doc_comment, "ProfileCaption" TSRMLS_CC);
+
+        // Group
+        n->function.group = forp_annotation(op_array->doc_comment, "ProfileGroup" TSRMLS_CC);
+
+    } else {
+        n->caption = NULL;
+        n->function.group = NULL;
+    }
+
+    // Node of type function
+    if(edata) {
+        forp_populate_function(&(n->function), edata, op_array TSRMLS_CC);
+
+        // Collects params
+        if(n->caption) {
+            void **params;
+            int params_count;
+            int i;
+
+            // Retrieves params in zend_vm_stack
+#if (PHP_MAJOR_VERSION == 5) && (PHP_MINOR_VERSION > 2)
+            params = EG(argument_stack)->top-1;
+#else
+            params = EG(argument_stack).top_element-1;
+#endif
+            params_count = (ulong) *params;
+
+            for(i = 1; i <= params_count; i++) {
+
+                char c[4];
+                char *v;
+
+                sprintf(c, "#%d", params_count - i + 1);
+
+                zval *expr;
+                expr = *((zval **) (params - i));
+
+                // Uses zend_make_printable_zval
+                zval expr_copy;
+                int use_copy;
+                zend_make_printable_zval(expr, &expr_copy, &use_copy);
+                if(use_copy) {
+                    v = strdup((char*)(expr_copy).value.str.val);
+                    zval_dtor(&expr_copy);
+                } else {
+                    v = strdup((char*)(*expr).value.str.val);
+                }
+                /*switch(Z_TYPE_P(expr)) {
+                    case IS_STRING :
+                        v = strdup((char*)(*expr).value.str.val);
+                        break;
+                    case IS_DOUBLE :
+                        //convert_to_string
+                        break;
+                    case IS_OBJECT :
+                        v = "(Object)";
+                        break;
+                    case IS_ARRAY :
+                        v = "(Array)";
+                        break;
+                    case IS_RESOURCE :
+                        v = "(Resource)";
+                        break;
+                    default :
+                        v = "(not a string)";
+                }*/
+
+                n->caption = forp_str_replace(
+                    c, v,
+                    n->caption TSRMLS_CC
+                );
+            }
+        }
+
+    } else {
+        // Root node
+        edata = EG(current_execute_data);
+        n->function.class = NULL;
+        n->function.function = "{main}";
+        n->function.filename = edata->op_array->filename;
+        n->function.lineno = 0;
+    }
+
+    FORP_G(current_node) = n;
     key = FORP_G(stack_len);
-    pn->key = key;
+    n->key = key;
     FORP_G(stack_len)++;
     FORP_G(stack) = erealloc(
             FORP_G(stack),
             FORP_G(stack_len) * sizeof (forp_node_t)
             );
-    FORP_G(stack)[key] = pn;
+    FORP_G(stack)[key] = n;
 
-    gettimeofday(&tv, NULL);
-    pn->time_begin = tv.tv_sec * 1000000.0 + tv.tv_usec;
+    if(FORP_G(flags) & FORP_FLAG_CPU) {
+        gettimeofday(&tv, NULL);
+        n->time_begin = tv.tv_sec * 1000000.0 + tv.tv_usec;
+    }
 
-    pn->mem_begin = zend_memory_usage(0 TSRMLS_CC);
+    if(FORP_G(flags) & FORP_FLAG_MEMORY) {
+        n->mem_begin = zend_memory_usage(0 TSRMLS_CC);
+    }
 
-    return pn;
+    return n;
 }
 /* }}} */
 
@@ -179,18 +340,22 @@ zend_op_array *forp_compile_file(zend_file_handle *file_handle, int type TSRMLS_
 
 /* {{{ forp_end
  */
-void forp_end(forp_node_t *pn TSRMLS_DC) {
+void forp_end(forp_node_t *n TSRMLS_DC) {
     struct timeval tv;
 
     // dump memory before next steps
-    pn->mem_end = zend_memory_usage(0 TSRMLS_CC);
-    pn->mem = pn->mem_end - pn->mem_begin;
+    if(FORP_G(flags) & FORP_FLAG_MEMORY) {
+        n->mem_end = zend_memory_usage(0 TSRMLS_CC);
+        n->mem = n->mem_end - n->mem_begin;
+    }
 
-    gettimeofday(&tv, NULL);
-    pn->time_end = tv.tv_sec * 1000000.0 + tv.tv_usec;
-    pn->time = pn->time_end - pn->time_begin;
+    if(FORP_G(flags) & FORP_FLAG_CPU) {
+        gettimeofday(&tv, NULL);
+        n->time_end = tv.tv_sec * 1000000.0 + tv.tv_usec;
+        n->time = n->time_end - n->time_begin;
+    }
 
-    FORP_G(current_node) = pn->parent;
+    FORP_G(current_node) = n->parent;
     FORP_G(nesting_level)--;
 }
 /* }}} */
@@ -198,14 +363,14 @@ void forp_end(forp_node_t *pn TSRMLS_DC) {
 /* {{{ forp_execute
  */
 void forp_execute(zend_op_array *op_array TSRMLS_DC) {
-    forp_node_t *pn;
+    forp_node_t *n;
 
     if (FORP_G(nesting_level) > FORP_G(max_nesting_level)) {
         old_execute(op_array TSRMLS_CC);
     } else {
-        pn = forp_begin(EG(current_execute_data), op_array TSRMLS_CC);
+        n = forp_begin(EG(current_execute_data), op_array TSRMLS_CC);
         old_execute(op_array TSRMLS_CC);
-        forp_end(pn TSRMLS_CC);
+        forp_end(n TSRMLS_CC);
     }
 }
 /* }}} */
@@ -213,18 +378,18 @@ void forp_execute(zend_op_array *op_array TSRMLS_DC) {
 /* {{{ forp_execute_internal
  */
 void forp_execute_internal(zend_execute_data *current_execute_data, int ret TSRMLS_DC) {
-    forp_node_t *pn;
+    forp_node_t *n;
 
     if (FORP_G(nesting_level) > FORP_G(max_nesting_level)) {
         execute_internal(current_execute_data, ret TSRMLS_CC);
     } else {
-        pn = forp_begin(EG(current_execute_data), NULL TSRMLS_CC);
+        n = forp_begin(EG(current_execute_data), NULL TSRMLS_CC);
         if (old_execute_internal) {
             old_execute_internal(current_execute_data, ret TSRMLS_CC);
         } else {
             execute_internal(current_execute_data, ret TSRMLS_CC);
         }
-        forp_end(pn TSRMLS_CC);
+        forp_end(n TSRMLS_CC);
     }
 }
 /* }}} */
@@ -239,11 +404,11 @@ void forp_stack_dump(TSRMLS_D) {
     array_init(FORP_G(dump));
 
     for (i = 0; i < FORP_G(stack_len); ++i) {
-        forp_node_t *pn;
+        forp_node_t *n;
 
-        pn = FORP_G(stack)[i];
+        n = FORP_G(stack)[i];
 
-        if (strstr(FORP_SKIP, pn->function.function)) {
+        if (strstr(FORP_SKIP, n->function.function)) {
             continue;
         }
 
@@ -251,27 +416,40 @@ void forp_stack_dump(TSRMLS_D) {
         MAKE_STD_ZVAL(t);
         array_init(t);
 
-        if (pn->function.filename)
-            add_assoc_string(t, FORP_DUMP_ASSOC_FILE, pn->function.filename, 1);
+        if (n->function.filename)
+            add_assoc_string(t, FORP_DUMP_ASSOC_FILE, n->function.filename, 1);
 
-        if (pn->function.class)
-            add_assoc_string(t, FORP_DUMP_ASSOC_CLASS, pn->function.class, 1);
+        if (n->function.class)
+            add_assoc_string(t, FORP_DUMP_ASSOC_CLASS, n->function.class, 1);
 
-        if (pn->function.function)
-            add_assoc_string(t, FORP_DUMP_ASSOC_FUNCTION, pn->function.function, 1);
+        if (n->function.function)
+            add_assoc_string(t, FORP_DUMP_ASSOC_FUNCTION, n->function.function, 1);
 
-        if (pn->function.lineno)
-            add_assoc_long(t, FORP_DUMP_ASSOC_LINENO, pn->function.lineno);
+        if (n->function.lineno)
+            add_assoc_long(t, FORP_DUMP_ASSOC_LINENO, n->function.lineno);
 
-        zval *time;
-        MAKE_STD_ZVAL(time);
-        ZVAL_DOUBLE(time, round(pn->time * 1000000.0) / 1000000.0);
-        add_assoc_zval(t, FORP_DUMP_ASSOC_CPU, time);
-        add_assoc_long(t, FORP_DUMP_ASSOC_MEMORY, pn->mem);
-        add_assoc_long(t, FORP_DUMP_ASSOC_LEVEL, pn->level);
+        if (n->function.group)
+            add_assoc_string(t, FORP_DUMP_ASSOC_GROUP, n->function.group, 1);
+
+        if (n->caption)
+            add_assoc_string(t, FORP_DUMP_ASSOC_CAPTION, n->caption, 1);
+
+        if(FORP_G(flags) & FORP_FLAG_CPU) {
+            zval *time;
+            MAKE_STD_ZVAL(time);
+            ZVAL_DOUBLE(time, round(n->time * 1000000.0) / 1000000.0);
+            add_assoc_zval(t, FORP_DUMP_ASSOC_CPU, time);
+        }
+
+        if(FORP_G(flags) & FORP_FLAG_MEMORY) {
+            add_assoc_long(t, FORP_DUMP_ASSOC_MEMORY, n->mem);
+        }
+
+        add_assoc_long(t, FORP_DUMP_ASSOC_LEVEL, n->level);
 
         // {main} don't have parent
-        if (pn->parent) add_assoc_long(t, FORP_DUMP_ASSOC_PARENT, pn->parent->key);
+        if (n->parent)
+            add_assoc_long(t, FORP_DUMP_ASSOC_PARENT, n->parent->key);
 
         if (zend_hash_next_index_insert(Z_ARRVAL_P(FORP_G(dump)), (void *) &t, sizeof (zval *), NULL) == FAILURE) {
             return;
@@ -289,7 +467,12 @@ void forp_stack_dump_cli_node(forp_node_t *node TSRMLS_DC) {
         return;
     }
 
-    php_printf("[time:%09.0f] [memory:%09d] ", node->time, node->mem);
+    if(FORP_G(flags) & FORP_FLAG_CPU) {
+        php_printf("[time:%09.0f] ", node->time);
+    }
+    if(FORP_G(flags) & FORP_FLAG_MEMORY) {
+        php_printf("[memory:%09d] ", node->mem);
+    }
     for (j = 0; j < node->level; ++j) {
         if (j == node->level - 1) php_printf(" └── ");
         else php_printf(" |   ");

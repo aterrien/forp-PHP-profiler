@@ -24,28 +24,40 @@
 #include "TSRM.h"
 #endif
 
-/* structures */
+#define FORP_NODE_TYPE_FUNCTION		0x0001
+#define FORP_NODE_TYPE_GROUP    	0x0002
+
 typedef struct forp_function_t {
     char *filename;
     char *class;
     char *function;
     int lineno;
     int type;
+    char *group;
 } forp_function_t;
+
+
+//typedef struct forp_group_t {
+//    char *name;
+//} forp_group_t;
 
 typedef struct forp_node_t {
     int key;
-    forp_function_t function;
+    //int type;
     int level;
-    char *include_filename;
     struct forp_node_t *parent;
+    char *caption;
+
+    // Type node specific
+    //forp_group_t group;
+    forp_function_t function;
 
     // Memory
     signed long mem;
     signed long mem_begin;
     signed long mem_end;
 
-    // CPU
+    // Duration
     double time;
     double time_begin;
     double time_end;

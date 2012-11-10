@@ -28,8 +28,6 @@
 #include "ext/standard/info.h"
 #include "zend_exceptions.h"
 
-ZEND_DECLARE_MODULE_GLOBALS(forp);
-
 /* {{{ forp_functions[]
  *
  * Every user visible function must have an entry in forp_functions[].
@@ -75,7 +73,6 @@ ZEND_GET_MODULE(forp)
 /* {{{ PHP_INI
  */
 PHP_INI_BEGIN()
-    STD_PHP_INI_BOOLEAN("forp.enable", "0", PHP_INI_ALL, OnUpdateBool, enabled, zend_forp_globals, forp_globals)
     STD_PHP_INI_ENTRY("forp.max_nesting_level", "10", PHP_INI_ALL, OnUpdateLong, max_nesting_level, zend_forp_globals, forp_globals)
     STD_PHP_INI_BOOLEAN("forp.no_internals", "0", PHP_INI_ALL, OnUpdateBool, no_internals, zend_forp_globals, forp_globals)
 PHP_INI_END()
@@ -86,7 +83,8 @@ PHP_INI_END()
 static void php_forp_init_globals(zend_forp_globals *forp_globals)
 {
 	forp_globals->enabled = 0;
-	forp_globals->max_nesting_level = 10;
+	forp_globals->flags = FORP_FLAG_CPU | FORP_FLAG_MEMORY | FORP_FLAG_ANNOTATIONS;
+	forp_globals->max_nesting_level = 20;
 	forp_globals->no_internals = 0;
 	forp_globals->stack_len = 0;
 	forp_globals->nesting_level = 0;
@@ -128,9 +126,9 @@ PHP_MINIT_FUNCTION(forp) {
 
     REGISTER_INI_ENTRIES();
 
-    // FIXME W32
-    //REGISTER_LONG_CONSTANT("FORP_MEMORY", FORP_MEMORY, CONST_CS | CONST_PERSISTENT);
-    //REGISTER_LONG_CONSTANT("FORP_CPU", FORP_CPU, CONST_CS | CONST_PERSISTENT);
+    //REGISTER_LONG_CONSTANT("FORP_FLAG_MINIMALISTIC", FORP_FLAG_MINIMALISTIC, CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("FORP_FLAG_MEMORY", FORP_FLAG_MEMORY, CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("FORP_FLAG_CPU", FORP_FLAG_CPU, CONST_CS | CONST_PERSISTENT);
 
     return SUCCESS;
 }
@@ -183,27 +181,30 @@ ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp) {
 /* {{{ forp_enable
  */
 ZEND_FUNCTION(forp_enable) {
-    long opt = 1;//FORP_MEMORY | FORP_CPU;
-    //if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &opt) == FAILURE) {
-    //    return;
-    //}
-    FORP_G(enabled) = opt;
-    if (FORP_G(enabled)) {
-        // Proxying zend api methods
-        old_execute = zend_execute;
-        zend_execute = forp_execute;
-        if (!FORP_G(no_internals)) {
-            old_compile_file = zend_compile_file;
-            zend_compile_file = forp_compile_file;
 
-            old_execute_internal = zend_execute_internal;
-            zend_execute_internal = forp_execute_internal;
-        }
-        FORP_G(main) = forp_begin(NULL, NULL TSRMLS_CC);
+    long opt = -1;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &opt) == FAILURE) {
+        return;
     }
+    if(opt >= 0) FORP_G(flags) = opt;
+
+    FORP_G(enabled) = 1;
+
+    // Proxying zend api methods
+    old_execute = zend_execute;
+    zend_execute = forp_execute;
+
+    if (!FORP_G(no_internals)) {
+        old_compile_file = zend_compile_file;
+        zend_compile_file = forp_compile_file;
+
+        old_execute_internal = zend_execute_internal;
+        zend_execute_internal = forp_execute_internal;
+    }
+
+    FORP_G(main) = forp_begin(NULL, NULL TSRMLS_CC);
 }
 /* }}} */
-
 
 /* {{{ forp_dump
  */
@@ -241,4 +242,3 @@ ZEND_FUNCTION(forp_print) {
     }
 }
 /* }}} */
-

@@ -1,7 +1,5 @@
 !under development!
 
-on : PHP 5.3.8,  Debian Squeeze
-
 [![Build Status](https://secure.travis-ci.org/aterrien/forp.png)](http://travis-ci.org/aterrien/forp)
 
 # Introduction #
@@ -13,7 +11,35 @@ forp is a lightweight PHP extension which provides CPU and memory profiling data
 - forp_dump() : Array - forp stack
 - forp_print() : displays forp stack (CLI)
 
-## Install ##
+## Function annotations  ##
+
+- @ProfileGroup
+
+Sets a group that function belongs.
+
+```php
+/**
+ * @ProfileGroup("Database")
+ */
+function exec($query) {
+    /* ... */
+}
+```
+
+- @ProfileCaption
+
+Adds caption to function. Caption string may contain references (#<param num>) to parameters of the function.
+
+```php
+/**
+ * @ProfileCaption("Find row for pk #1")
+ */
+public function findByPk($pk) {
+    /* ... */
+}
+```
+
+## Linux Install ##
 
 * make
 ```sh
@@ -38,3 +64,4 @@ https://github.com/downloads/ichiriac/forp/php53_x86_ts_forp.dll
 
 For PHP 5.3 - Non Thread Safe :
 https://github.com/downloads/ichiriac/forp/php53_x86_nts_forp.dll
+
