@@ -35,32 +35,137 @@ static inline double round(double val) {
 }
 #endif
 
-/* {{{ forp_annotation
+/* {{{ forp_annotation_args
  *
- * Handles annotations in doc_comment : @<tag>("<value>")<\n>
+ * Parses args of an annotation
+ *
+ * @param char* str
+ * @param char*** args
+ * @param int* args_count
+ * @return void
+ */
+void forp_annotation_args(char *str, char ***args, int *args_count TSRMLS_DC) {
+    int esc = 0, buf = 0, i = 0, j = 0;
+    char *ex;
+
+    *args_count = 0;
+    if(strlen(str) > 0) {
+        ex = emalloc(sizeof(char*));
+        while(str[i] != '\0') {
+            if(!esc) {
+                if(str[i] == '\\') {
+                    esc = 1;
+                }
+                if((!esc) && str[i] == '"') {
+                    if(buf && j > 0) {
+                        ex = erealloc(ex, sizeof(char*) * (j + 1));
+                        ex[j] = '\0';
+                        (*args)[(*args_count)] = strdup(ex);
+                        (*args_count)++;
+                        memset(ex, 0, sizeof(char*));
+                        j = 0;
+                    }
+                    buf = !buf;
+                } else {
+                    if(buf) {
+                        ex = erealloc(ex, sizeof(char*) * (j + 1));
+                        ex[j] = str[i];
+                        j++;
+                    }
+                }
+            } else {
+                if(buf) {
+                    ex = erealloc(ex, sizeof(char*) * (j + 1));
+                    ex[j] = str[i];
+                    j++;
+                }
+                esc = 0;
+            }
+            i++;
+        }
+
+        //if(buf) {
+            //ex[j] = '\0';
+            //printf("NOT CLOSED \"!:|%s|\n", ex);
+        //}
+
+        efree(ex);
+    }
+}
+/* }}} */
+
+/* {{{ forp_annotation_tok
+ *
+ * Handles annotations in doc_comment : @<tag>(<params>)<\n>
  *
  * @param char* doc_comment
  * @param char* tag
  * @return char*
  */
-char *forp_annotation(char *doc_comment, char *tag TSRMLS_DC) {
+char *forp_annotation_tok(const char *doc_comment, char *tag TSRMLS_DC) {
     char *v = NULL, *v_search = NULL, *t_start = NULL, *tmp = NULL, *eot = NULL;
     unsigned int v_start, v_end;
 
     v_search = emalloc(sizeof(char*) * (strlen(tag) + 3));
     if(v_search) {
-        sprintf(v_search, "@%s(\"", tag);
+        sprintf(v_search, "@%s(", tag);
         t_start = strstr(doc_comment, v_search);
         if (t_start) {
             v_start = t_start - doc_comment + strlen(v_search);
             tmp = strndup(doc_comment + v_start, strlen(doc_comment));
-            eot = strstr(tmp, "\")");
+            eot = strstr(tmp, ")");
             v_end = eot - tmp;
             v = strndup(doc_comment + v_start, v_end);
         }
         efree(v_search);
     }
+
     return v;
+}
+/* }}} */
+
+/* {{{ forp_annotation_string
+ *
+ * Retrieves string arg in an annotation
+ *
+ * @param char* doc_comment
+ * @param char* tag
+ * @return char*
+ */
+char *forp_annotation_string(const char *doc_comment, char *tag TSRMLS_DC) {
+    int args_count;
+    char *v = NULL;
+    char **args = emalloc(sizeof(char*));
+    char *args_str = forp_annotation_tok(doc_comment, tag TSRMLS_CC);
+
+    if(args_str != NULL) {
+        forp_annotation_args(args_str, &args, &args_count TSRMLS_CC);
+        if(args_count > 0) {
+            v = strdup(args[0]);
+        }
+    }
+    efree(args);
+
+    return v;
+}
+/* }}} */
+
+/* {{{ forp_annotation_array
+ *
+ * Retrieves args array in an annotation
+ *
+ * @param char* doc_comment
+ * @param char* tag
+ * @param char*** args
+ * @param int* args_count
+ * @return void
+ */
+void forp_annotation_array(const char *doc_comment, char *tag, char ***args, int *args_count TSRMLS_DC) {
+    char *args_str = forp_annotation_tok(doc_comment, tag TSRMLS_CC);
+
+    if(strlen(args_str) > 0) {
+        forp_annotation_args(args_str, args, args_count TSRMLS_CC);
+    }
 }
 /* }}} */
 
@@ -214,14 +319,21 @@ forp_node_t *forp_begin(zend_execute_data *edata, zend_op_array *op_array TSRMLS
     if((FORP_G(flags) & FORP_FLAG_ANNOTATIONS) && op_array && op_array->doc_comment) {
 
         // Caption
-        n->caption = forp_annotation(op_array->doc_comment, "ProfileCaption" TSRMLS_CC);
+        n->caption = forp_annotation_string(op_array->doc_comment, "ProfileCaption" TSRMLS_CC);
 
         // Group
-        n->function.group = forp_annotation(op_array->doc_comment, "ProfileGroup" TSRMLS_CC);
+        int args_count;
+        n->function.groups = emalloc(sizeof(char*) * 10); // TODO precond 10 args max
+        forp_annotation_array(op_array->doc_comment, "ProfileGroup", &(n->function.groups), &(n->function.groups_len) TSRMLS_CC);
+
+        // Frame
+        n->function.highlight = forp_annotation_string(op_array->doc_comment, "ProfileHighlight" TSRMLS_CC);
+        if(n->function.highlight) php_printf(FORP_HIGHLIGHT_PREPEND);
 
     } else {
         n->caption = NULL;
-        n->function.group = NULL;
+        n->function.groups = NULL;
+        n->function.highlight = NULL;
     }
 
     // Node of type function
@@ -355,6 +467,10 @@ void forp_end(forp_node_t *n TSRMLS_DC) {
         n->time = n->time_end - n->time_begin;
     }
 
+    if(n->function.highlight) {
+        php_printf(FORP_HIGHLIGHT_APPEND, (n->time / 1000), (n->mem / 1024), n->level);
+    }
+
     FORP_G(current_node) = n->parent;
     FORP_G(nesting_level)--;
 }
@@ -428,8 +544,17 @@ void forp_stack_dump(TSRMLS_D) {
         if (n->function.lineno)
             add_assoc_long(t, FORP_DUMP_ASSOC_LINENO, n->function.lineno);
 
-        if (n->function.group)
-            add_assoc_string(t, FORP_DUMP_ASSOC_GROUP, n->function.group, 1);
+        if (n->function.groups && n->function.groups_len > 0) {
+            zval *groups;
+            MAKE_STD_ZVAL(groups);
+            array_init(groups);
+            int j = 0;
+            while(j < n->function.groups_len) {
+                add_next_index_string(groups, n->function.groups[j], 1);
+                j++;
+            }
+            add_assoc_zval(t, FORP_DUMP_ASSOC_GROUPS, groups);
+        }
 
         if (n->caption)
             add_assoc_string(t, FORP_DUMP_ASSOC_CAPTION, n->caption, 1);

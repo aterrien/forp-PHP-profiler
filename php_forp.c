@@ -156,6 +156,8 @@ PHP_RSHUTDOWN_FUNCTION(forp) {
 ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp) {
     TSRMLS_FETCH();
 
+    // TODO track not terminated node
+
     FORP_G(nesting_level) = 0;
     FORP_G(current_node) = NULL;
 
@@ -163,6 +165,9 @@ ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp) {
     if (FORP_G(stack)) {
         int i;
         for (i = 0; i < FORP_G(stack_len); ++i) {
+            if(FORP_G(stack)[i]->function.groups) {
+                efree(FORP_G(stack)[i]->function.groups);
+            }
             efree(FORP_G(stack)[i]);
         }
         if (i) efree(FORP_G(stack));
