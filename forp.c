@@ -162,8 +162,7 @@ char *forp_annotation_string(const char *doc_comment, char *tag TSRMLS_DC) {
  */
 void forp_annotation_array(const char *doc_comment, char *tag, char ***args, int *args_count TSRMLS_DC) {
     char *args_str = forp_annotation_tok(doc_comment, tag TSRMLS_CC);
-
-    if(strlen(args_str) > 0) {
+    if(args_str != NULL) {
         forp_annotation_args(args_str, args, args_count TSRMLS_CC);
     }
 }
@@ -302,7 +301,6 @@ forp_node_t *forp_begin(zend_execute_data *edata, zend_op_array *op_array TSRMLS
 
     // Inits node
     n = emalloc(sizeof (forp_node_t));
-    //n->type = FORP_NODE_TYPE_FUNCTION;
 
     n->level = FORP_G(nesting_level)++;
     n->parent = FORP_G(current_node);
@@ -322,8 +320,8 @@ forp_node_t *forp_begin(zend_execute_data *edata, zend_op_array *op_array TSRMLS
         n->caption = forp_annotation_string(op_array->doc_comment, "ProfileCaption" TSRMLS_CC);
 
         // Group
-        int args_count;
         n->function.groups = emalloc(sizeof(char*) * 10); // TODO precond 10 args max
+        n->function.groups_len = 0;
         forp_annotation_array(op_array->doc_comment, "ProfileGroup", &(n->function.groups), &(n->function.groups_len) TSRMLS_CC);
 
         // Frame
@@ -333,6 +331,7 @@ forp_node_t *forp_begin(zend_execute_data *edata, zend_op_array *op_array TSRMLS
     } else {
         n->caption = NULL;
         n->function.groups = NULL;
+        n->function.groups_len = 0;
         n->function.highlight = NULL;
     }
 
