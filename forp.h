@@ -50,6 +50,7 @@ typedef struct forp_node_t {
     int level;
     struct forp_node_t *parent;
     char *caption;
+    char *alias; // node alias
 
     // Type node specific
     //forp_group_t group;

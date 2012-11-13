@@ -316,6 +316,9 @@ forp_node_t *forp_begin(zend_execute_data *edata, zend_op_array *op_array TSRMLS
     // First thing to do, handle node annotations to know what to do
     if((FORP_G(flags) & FORP_FLAG_ANNOTATIONS) && op_array && op_array->doc_comment) {
 
+        // Alias : allows to give a name to anonymous functions
+        n->alias = forp_annotation_string(op_array->doc_comment, "ProfileAlias" TSRMLS_CC);
+
         // Caption
         n->caption = forp_annotation_string(op_array->doc_comment, "ProfileCaption" TSRMLS_CC);
 
@@ -329,6 +332,7 @@ forp_node_t *forp_begin(zend_execute_data *edata, zend_op_array *op_array TSRMLS
         if(n->function.highlight) php_printf(FORP_HIGHLIGHT_PREPEND);
 
     } else {
+        n->alias = NULL;
         n->caption = NULL;
         n->function.groups = NULL;
         n->function.groups_len = 0;
@@ -537,8 +541,11 @@ void forp_stack_dump(TSRMLS_D) {
         if (n->function.class)
             add_assoc_string(t, FORP_DUMP_ASSOC_CLASS, n->function.class, 1);
 
-        if (n->function.function)
+        if(n->alias) {
+            add_assoc_string(t, FORP_DUMP_ASSOC_FUNCTION, n->alias, 1);
+        } else if (n->function.function) {
             add_assoc_string(t, FORP_DUMP_ASSOC_FUNCTION, n->function.function, 1);
+        }
 
         if (n->function.lineno)
             add_assoc_long(t, FORP_DUMP_ASSOC_LINENO, n->function.lineno);
