@@ -73,7 +73,7 @@ ZEND_GET_MODULE(forp)
 /* {{{ PHP_INI
  */
 PHP_INI_BEGIN()
-    STD_PHP_INI_ENTRY("forp.max_nesting_level", "10", PHP_INI_ALL, OnUpdateLong, max_nesting_level, zend_forp_globals, forp_globals)
+    STD_PHP_INI_ENTRY("forp.max_nesting_level", "20", PHP_INI_ALL, OnUpdateLong, max_nesting_level, zend_forp_globals, forp_globals)
     STD_PHP_INI_BOOLEAN("forp.no_internals", "0", PHP_INI_ALL, OnUpdateBool, no_internals, zend_forp_globals, forp_globals)
 PHP_INI_END()
 /* }}} */
@@ -82,16 +82,16 @@ PHP_INI_END()
  */
 static void php_forp_init_globals(zend_forp_globals *forp_globals)
 {
-	forp_globals->enabled = 0;
-	forp_globals->flags = FORP_FLAG_CPU | FORP_FLAG_MEMORY | FORP_FLAG_ANNOTATIONS;
-	forp_globals->max_nesting_level = 20;
-	forp_globals->no_internals = 0;
-	forp_globals->stack_len = 0;
-	forp_globals->nesting_level = 0;
-	forp_globals->dump = NULL;
-	forp_globals->stack = NULL;
-	forp_globals->main = NULL;
-	forp_globals->current_node = NULL;
+    forp_globals->enabled = 0;
+    forp_globals->flags = FORP_FLAG_CPU | FORP_FLAG_MEMORY | FORP_FLAG_ANNOTATIONS;
+    forp_globals->max_nesting_level = 20;
+    forp_globals->no_internals = 0;
+    forp_globals->stack_len = 0;
+    forp_globals->nesting_level = 0;
+    forp_globals->dump = NULL;
+    forp_globals->stack = NULL;
+    forp_globals->main = NULL;
+    forp_globals->current_node = NULL;
 }
 /* }}} */
 
@@ -129,6 +129,7 @@ PHP_MINIT_FUNCTION(forp) {
     //REGISTER_LONG_CONSTANT("FORP_FLAG_MINIMALISTIC", FORP_FLAG_MINIMALISTIC, CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("FORP_FLAG_MEMORY", FORP_FLAG_MEMORY, CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("FORP_FLAG_CPU", FORP_FLAG_CPU, CONST_CS | CONST_PERSISTENT);
+    REGISTER_LONG_CONSTANT("FORP_FLAG_ANNOTATIONS", FORP_FLAG_ANNOTATIONS, CONST_CS | CONST_PERSISTENT);
 
     return SUCCESS;
 }
@@ -138,14 +139,15 @@ PHP_MINIT_FUNCTION(forp) {
  */
 PHP_RSHUTDOWN_FUNCTION(forp) {
 
-    // Restores zend api methods
-    if (old_execute) {
-        zend_execute = old_execute;
-        old_execute = NULL;
-    }
-    if (!FORP_G(no_internals)) {
-        zend_compile_file = old_compile_file;
-        zend_execute_internal = old_execute_internal;
+    if(FORP_G(enabled)) {
+        // Restores zend api methods
+        if (old_execute) {
+            zend_execute = old_execute;
+        }
+        if (!FORP_G(no_internals)) {
+            zend_compile_file = old_compile_file;
+            zend_execute_internal = old_execute_internal;
+        }
     }
     return SUCCESS;
 }
@@ -156,29 +158,30 @@ PHP_RSHUTDOWN_FUNCTION(forp) {
 ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp) {
     TSRMLS_FETCH();
 
-    // TODO track not terminated node
+    if(FORP_G(enabled)) {
+        // TODO track not terminated node
 
-    FORP_G(nesting_level) = 0;
-    FORP_G(current_node) = NULL;
+        FORP_G(nesting_level) = 0;
+        FORP_G(current_node) = NULL;
 
-    // destruct the stack
-    if (FORP_G(stack)) {
-        int i;
-        for (i = 0; i < FORP_G(stack_len); ++i) {
-            if(FORP_G(stack)[i]->function.groups) {
-                efree(FORP_G(stack)[i]->function.groups);
+        // destruct the stack
+        if (FORP_G(stack)) {
+            int i;
+            for (i = 0; i < FORP_G(stack_len); ++i) {
+                if(FORP_G(stack)[i]->function.groups) {
+                    efree(FORP_G(stack)[i]->function.groups);
+                }
+                efree(FORP_G(stack)[i]);
             }
-            efree(FORP_G(stack)[i]);
+            if (i) efree(FORP_G(stack));
         }
-        if (i) efree(FORP_G(stack));
+        FORP_G(stack_len) = 0;
+        FORP_G(stack) = NULL;
+
+        // destruct the dump
+        if (FORP_G(dump)) zval_ptr_dtor(&FORP_G(dump));
+        FORP_G(dump) = NULL;
     }
-    FORP_G(stack_len) = 0;
-    FORP_G(stack) = NULL;
-
-    // destruct the dump
-    if (FORP_G(dump)) zval_ptr_dtor(&FORP_G(dump));
-    FORP_G(dump) = NULL;
-
     return SUCCESS;
 }
 /* }}} */
