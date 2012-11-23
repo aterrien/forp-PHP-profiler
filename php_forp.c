@@ -33,10 +33,12 @@
  * Every user visible function must have an entry in forp_functions[].
  */
 const zend_function_entry forp_functions[] = {
-    PHP_FE(forp_enable, NULL)
+    PHP_FE(forp_start, NULL)
+    PHP_FE(forp_end, NULL)
     PHP_FE(forp_dump, NULL)
     PHP_FE(forp_print, NULL)
     PHP_FE(forp_info, NULL)
+    PHP_FE(forp_enable, NULL)
     PHP_FE_END /* Must be the last line in forp_functions[] */
 };
 /* }}} */
@@ -82,7 +84,7 @@ PHP_INI_END()
  */
 static void php_forp_init_globals(zend_forp_globals *forp_globals)
 {
-    forp_globals->enabled = 0;
+    forp_globals->started = 0;
     forp_globals->flags = FORP_FLAG_CPU | FORP_FLAG_MEMORY | FORP_FLAG_ANNOTATIONS;
     forp_globals->max_nesting_level = 20;
     forp_globals->no_internals = 0;
@@ -105,7 +107,7 @@ PHP_MSHUTDOWN_FUNCTION(forp) {
 /* {{{ PHP_MINFO_FUNCTION
  */
 PHP_MINFO_FUNCTION(forp) {
-    forp_info();
+    forp_info(TSRMLS_C);
     DISPLAY_INI_ENTRIES();
 }
 /* }}} */
@@ -126,7 +128,6 @@ PHP_MINIT_FUNCTION(forp) {
 
     REGISTER_INI_ENTRIES();
 
-    //REGISTER_LONG_CONSTANT("FORP_FLAG_MINIMALISTIC", FORP_FLAG_MINIMALISTIC, CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("FORP_FLAG_MEMORY", FORP_FLAG_MEMORY, CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("FORP_FLAG_CPU", FORP_FLAG_CPU, CONST_CS | CONST_PERSISTENT);
     REGISTER_LONG_CONSTANT("FORP_FLAG_ANNOTATIONS", FORP_FLAG_ANNOTATIONS, CONST_CS | CONST_PERSISTENT);
@@ -139,7 +140,7 @@ PHP_MINIT_FUNCTION(forp) {
  */
 PHP_RSHUTDOWN_FUNCTION(forp) {
 
-    if(FORP_G(enabled)) {
+    if(FORP_G(started)) {
         // Restores zend api methods
         if (old_execute) {
             zend_execute = old_execute;
@@ -149,6 +150,7 @@ PHP_RSHUTDOWN_FUNCTION(forp) {
             zend_execute_internal = old_execute_internal;
         }
     }
+
     return SUCCESS;
 }
 /* }}} */
@@ -158,30 +160,29 @@ PHP_RSHUTDOWN_FUNCTION(forp) {
 ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp) {
     TSRMLS_FETCH();
 
-    if(FORP_G(enabled)) {
-        // TODO track not terminated node
+    // TODO track not terminated node
 
-        FORP_G(nesting_level) = 0;
-        FORP_G(current_node) = NULL;
+    FORP_G(nesting_level) = 0;
+    FORP_G(current_node) = NULL;
 
-        // destruct the stack
-        if (FORP_G(stack)) {
-            int i;
-            for (i = 0; i < FORP_G(stack_len); ++i) {
-                if(FORP_G(stack)[i]->function.groups) {
-                    efree(FORP_G(stack)[i]->function.groups);
-                }
-                efree(FORP_G(stack)[i]);
+    // stack dtor
+    if (FORP_G(stack) != NULL) {
+        int i;
+        for (i = 0; i < FORP_G(stack_len); ++i) {
+            if(FORP_G(stack)[i]->function.groups) {
+                efree(FORP_G(stack)[i]->function.groups);
             }
-            if (i) efree(FORP_G(stack));
+            efree(FORP_G(stack)[i]);
         }
-        FORP_G(stack_len) = 0;
-        FORP_G(stack) = NULL;
-
-        // destruct the dump
-        if (FORP_G(dump)) zval_ptr_dtor(&FORP_G(dump));
-        FORP_G(dump) = NULL;
+        if (i) efree(FORP_G(stack));
     }
+    FORP_G(stack_len) = 0;
+    FORP_G(stack) = NULL;
+
+    // dump dtor
+    if (FORP_G(dump) != NULL) zval_ptr_dtor(&FORP_G(dump));
+    FORP_G(dump) = NULL;
+
     return SUCCESS;
 }
 /* }}} */
@@ -190,47 +191,43 @@ ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp) {
  */
 ZEND_FUNCTION(forp_enable) {
 
+    php_error_docref(
+                NULL TSRMLS_CC,
+                E_USER_DEPRECATED,
+                "forp_enable() is deprecated, use forp_start()."
+                );
+
     long opt = -1;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &opt) == FAILURE) {
         return;
     }
     if(opt >= 0) FORP_G(flags) = opt;
-
-    FORP_G(enabled) = 1;
-
-    // Proxying zend api methods
-    old_execute = zend_execute;
-    zend_execute = forp_execute;
-
-    if (!FORP_G(no_internals)) {
-        old_compile_file = zend_compile_file;
-        zend_compile_file = forp_compile_file;
-
-        old_execute_internal = zend_execute_internal;
-        zend_execute_internal = forp_execute_internal;
-    }
-
-    FORP_G(main) = forp_begin(NULL, NULL TSRMLS_CC);
+    forp_start(TSRMLS_C);
 }
 /* }}} */
+
+ZEND_FUNCTION(forp_start) {
+    long opt = -1;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &opt) == FAILURE) {
+        return;
+    }
+    if(opt >= 0) FORP_G(flags) = opt;
+    forp_start(TSRMLS_C);
+}
+
+ZEND_FUNCTION(forp_end) {
+    forp_end(TSRMLS_C);
+}
 
 /* {{{ forp_dump
  */
 ZEND_FUNCTION(forp_dump) {
-
-    if (FORP_G(enabled)) {
-        if (!FORP_G(dump)) {
-            forp_end(FORP_G(main) TSRMLS_CC);
-            forp_stack_dump(TSRMLS_C);
-        }
-    } else {
-        php_error_docref(
-                NULL TSRMLS_CC,
-                E_NOTICE,
-                "forp_dump() has no effect when forp_enable is turned off."
-                );
+    if (FORP_G(started)) {
+        forp_end(TSRMLS_C);
     }
-
+    if (!FORP_G(dump)) {
+        forp_stack_dump(TSRMLS_C);
+    }
     RETURN_ZVAL(FORP_G(dump), 1, 0);
 }
 /* }}} */
@@ -238,15 +235,9 @@ ZEND_FUNCTION(forp_dump) {
 /* {{{ forp_print
  */
 ZEND_FUNCTION(forp_print) {
-    if (FORP_G(enabled)) {
-        forp_end(FORP_G(main) TSRMLS_CC);
-        forp_stack_dump_cli(TSRMLS_C);
-    } else {
-        php_error_docref(
-                NULL TSRMLS_CC,
-                E_NOTICE,
-                "forp_print() has no effect when forp_enable is turned off."
-                );
+    if (FORP_G(started)) {
+        forp_end(TSRMLS_C);
     }
+    forp_stack_dump_cli(TSRMLS_C);
 }
 /* }}} */

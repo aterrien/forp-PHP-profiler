@@ -292,9 +292,9 @@ static void forp_populate_function(
 }
 /* }}} */
 
-/* {{{ forp_begin
+/* {{{ forp_open_node
  */
-forp_node_t *forp_begin(zend_execute_data *edata, zend_op_array *op_array TSRMLS_DC) {
+forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TSRMLS_DC) {
     struct timeval tv;
     forp_node_t *n;
     int key;
@@ -315,6 +315,8 @@ forp_node_t *forp_begin(zend_execute_data *edata, zend_op_array *op_array TSRMLS
 
     // First thing to do, handle node annotations to know what to do
     if((FORP_G(flags) & FORP_FLAG_ANNOTATIONS) && op_array && op_array->doc_comment) {
+
+        // TODO Optimize it !
 
         // Alias : allows to give a name to anonymous functions
         n->alias = forp_annotation_string(op_array->doc_comment, "ProfileAlias" TSRMLS_CC);
@@ -377,25 +379,6 @@ forp_node_t *forp_begin(zend_execute_data *edata, zend_op_array *op_array TSRMLS
                 } else {
                     v = strdup((char*)(*expr).value.str.val);
                 }
-                /*switch(Z_TYPE_P(expr)) {
-                    case IS_STRING :
-                        v = strdup((char*)(*expr).value.str.val);
-                        break;
-                    case IS_DOUBLE :
-                        //convert_to_string
-                        break;
-                    case IS_OBJECT :
-                        v = "(Object)";
-                        break;
-                    case IS_ARRAY :
-                        v = "(Array)";
-                        break;
-                    case IS_RESOURCE :
-                        v = "(Resource)";
-                        break;
-                    default :
-                        v = "(not a string)";
-                }*/
 
                 n->caption = forp_str_replace(
                     c, v,
@@ -423,16 +406,96 @@ forp_node_t *forp_begin(zend_execute_data *edata, zend_op_array *op_array TSRMLS
             );
     FORP_G(stack)[key] = n;
 
+    if(FORP_G(flags) & FORP_FLAG_MEMORY) {
+        n->mem_begin = zend_memory_usage(0 TSRMLS_CC);
+    }
+
     if(FORP_G(flags) & FORP_FLAG_CPU) {
         gettimeofday(&tv, NULL);
         n->time_begin = tv.tv_sec * 1000000.0 + tv.tv_usec;
     }
 
-    if(FORP_G(flags) & FORP_FLAG_MEMORY) {
-        n->mem_begin = zend_memory_usage(0 TSRMLS_CC);
+    return n;
+}
+/* }}} */
+
+/* {{{ forp_close_node
+ */
+void forp_close_node(forp_node_t *n TSRMLS_DC) {
+    struct timeval tv;
+
+    // dump duration and memory before next steps
+    if(FORP_G(flags) & FORP_FLAG_CPU) {
+        gettimeofday(&tv, NULL);
+        n->time_end = tv.tv_sec * 1000000.0 + tv.tv_usec;
+        n->time = n->time_end - n->time_begin;
     }
 
-    return n;
+    if(FORP_G(flags) & FORP_FLAG_MEMORY) {
+        n->mem_end = zend_memory_usage(0 TSRMLS_CC);
+        n->mem = n->mem_end - n->mem_begin;
+    }
+
+    if(n->function.highlight) {
+        php_printf(FORP_HIGHLIGHT_APPEND, (n->time / 1000), (n->mem / 1024), n->level);
+    }
+
+    FORP_G(current_node) = n->parent;
+    FORP_G(nesting_level)--;
+}
+/* }}} */
+
+/* {{{ forp_start
+ */
+void forp_start(TSRMLS_D) {
+
+    if(FORP_G(started)) {
+        php_error_docref(
+            NULL TSRMLS_CC,
+            E_NOTICE,
+            "forp is already started."
+            );
+    } else {
+        FORP_G(started) = 1;
+
+        // Proxying zend api methods
+        old_execute = zend_execute;
+        zend_execute = forp_execute;
+
+        if (!FORP_G(no_internals)) {
+            old_compile_file = zend_compile_file;
+            zend_compile_file = forp_compile_file;
+
+            old_execute_internal = zend_execute_internal;
+            zend_execute_internal = forp_execute_internal;
+        }
+
+        FORP_G(main) = forp_open_node(NULL, NULL TSRMLS_CC);
+    }
+}
+/* }}} */
+
+/* {{{ forp_end
+ */
+void forp_end(TSRMLS_D) {
+
+    if(FORP_G(started)) {
+
+        // Close main
+        forp_close_node(FORP_G(main) TSRMLS_CC);
+
+        // Restores zend api methods
+        if (old_execute) {
+            zend_execute = old_execute;
+        }
+        if (!FORP_G(no_internals)) {
+            zend_compile_file = old_compile_file;
+            zend_execute_internal = old_execute_internal;
+        }
+
+        // Stop
+        FORP_G(started) = 0;
+    }
 }
 /* }}} */
 
@@ -445,40 +508,12 @@ void forp_info(TSRMLS_D) {
 }
 /* }}} */
 
-
 /* {{{ forp_compile_file
  */
 zend_op_array *forp_compile_file(zend_file_handle *file_handle, int type TSRMLS_DC) {
     return old_compile_file(file_handle, type TSRMLS_CC);
 }
 /* }}} */
-
-/* {{{ forp_end
- */
-void forp_end(forp_node_t *n TSRMLS_DC) {
-    struct timeval tv;
-
-    // dump memory before next steps
-    if(FORP_G(flags) & FORP_FLAG_MEMORY) {
-        n->mem_end = zend_memory_usage(0 TSRMLS_CC);
-        n->mem = n->mem_end - n->mem_begin;
-    }
-
-    if(FORP_G(flags) & FORP_FLAG_CPU) {
-        gettimeofday(&tv, NULL);
-        n->time_end = tv.tv_sec * 1000000.0 + tv.tv_usec;
-        n->time = n->time_end - n->time_begin;
-    }
-
-    if(n->function.highlight) {
-        php_printf(FORP_HIGHLIGHT_APPEND, (n->time / 1000), (n->mem / 1024), n->level);
-    }
-
-    FORP_G(current_node) = n->parent;
-    FORP_G(nesting_level)--;
-}
-/* }}} */
-
 /* {{{ forp_execute
  */
 void forp_execute(zend_op_array *op_array TSRMLS_DC) {
@@ -487,9 +522,9 @@ void forp_execute(zend_op_array *op_array TSRMLS_DC) {
     if (FORP_G(nesting_level) > FORP_G(max_nesting_level)) {
         old_execute(op_array TSRMLS_CC);
     } else {
-        n = forp_begin(EG(current_execute_data), op_array TSRMLS_CC);
+        n = forp_open_node(EG(current_execute_data), op_array TSRMLS_CC);
         old_execute(op_array TSRMLS_CC);
-        forp_end(n TSRMLS_CC);
+        forp_close_node(n TSRMLS_CC);
     }
 }
 /* }}} */
@@ -502,13 +537,13 @@ void forp_execute_internal(zend_execute_data *current_execute_data, int ret TSRM
     if (FORP_G(nesting_level) > FORP_G(max_nesting_level)) {
         execute_internal(current_execute_data, ret TSRMLS_CC);
     } else {
-        n = forp_begin(EG(current_execute_data), NULL TSRMLS_CC);
+        n = forp_open_node(EG(current_execute_data), NULL TSRMLS_CC);
         if (old_execute_internal) {
             old_execute_internal(current_execute_data, ret TSRMLS_CC);
         } else {
             execute_internal(current_execute_data, ret TSRMLS_CC);
         }
-        forp_end(n TSRMLS_CC);
+        forp_close_node(n TSRMLS_CC);
     }
 }
 /* }}} */
@@ -527,7 +562,11 @@ void forp_stack_dump(TSRMLS_D) {
 
         n = FORP_G(stack)[i];
 
-        if (strstr(FORP_SKIP, n->function.function)) {
+        if (
+            strstr(n->function.function,"forp_dump")
+            || strstr(n->function.function,"forp_end")
+            || strstr(n->function.function,"forp_start")
+        ) {
             continue;
         }
 
@@ -593,10 +632,6 @@ void forp_stack_dump(TSRMLS_D) {
  */
 void forp_stack_dump_cli_node(forp_node_t *node TSRMLS_DC) {
     int j;
-
-    if (strstr(FORP_SKIP, node->function.function)) {
-        return;
-    }
 
     if(FORP_G(flags) & FORP_FLAG_CPU) {
         php_printf("[time:%09.0f] ", node->time);

@@ -19,7 +19,6 @@
 #define PHP_FORP_H
 
 #define FORP_VERSION                "0.0.1"
-#define FORP_SKIP                   "|forp_dump|forp_print|"
 #define FORP_DUMP_ASSOC_FILE		"file"
 #define FORP_DUMP_ASSOC_CLASS		"class"
 #define FORP_DUMP_ASSOC_FUNCTION	"function"
@@ -56,14 +55,16 @@ PHP_MINFO_FUNCTION(forp);
 ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp);
 
 PHP_FUNCTION(forp_enable);
+PHP_FUNCTION(forp_start);
+PHP_FUNCTION(forp_end);
 PHP_FUNCTION(forp_dump);
 PHP_FUNCTION(forp_print);
 PHP_FUNCTION(forp_info);
 
 /* global variables */
 ZEND_BEGIN_MODULE_GLOBALS(forp)
-	int enabled;
     int flags;
+	int started;
 	int nesting_level;
 	forp_node_t *main;
 	forp_node_t *current_node;

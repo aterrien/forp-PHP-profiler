@@ -80,13 +80,17 @@ void forp_execute_internal(zend_execute_data *current_execute_data, int return_v
 /* public functions */
 static void forp_populate_function(forp_function_t *function, zend_execute_data *edata, zend_op_array *op_array TSRMLS_DC);
 
-forp_node_t *forp_begin(zend_execute_data *edata, zend_op_array *op_array TSRMLS_DC);
-
-void forp_info();
+void forp_info(TSRMLS_D);
 
 zend_op_array *forp_compile_file(zend_file_handle *file_handle, int type TSRMLS_DC);
 
-void forp_end(forp_node_t *pn TSRMLS_DC);
+void forp_start(TSRMLS_D);
+
+void forp_end(TSRMLS_D);
+
+forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TSRMLS_DC);
+
+void forp_close_node(forp_node_t *pn TSRMLS_DC);
 
 void forp_execute(zend_op_array *op_array TSRMLS_DC);
 
