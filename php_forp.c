@@ -75,7 +75,7 @@ ZEND_GET_MODULE(forp)
 /* {{{ PHP_INI
  */
 PHP_INI_BEGIN()
-    STD_PHP_INI_ENTRY("forp.max_nesting_level", "20", PHP_INI_ALL, OnUpdateLong, max_nesting_level, zend_forp_globals, forp_globals)
+    STD_PHP_INI_ENTRY("forp.max_nesting_level", "50", PHP_INI_ALL, OnUpdateLong, max_nesting_level, zend_forp_globals, forp_globals)
     STD_PHP_INI_BOOLEAN("forp.no_internals", "0", PHP_INI_ALL, OnUpdateBool, no_internals, zend_forp_globals, forp_globals)
 PHP_INI_END()
 /* }}} */
@@ -86,7 +86,7 @@ static void php_forp_init_globals(zend_forp_globals *forp_globals)
 {
     forp_globals->started = 0;
     forp_globals->flags = FORP_FLAG_CPU | FORP_FLAG_MEMORY | FORP_FLAG_ANNOTATIONS;
-    forp_globals->max_nesting_level = 20;
+    forp_globals->max_nesting_level = 50;
     forp_globals->no_internals = 0;
     forp_globals->stack_len = 0;
     forp_globals->nesting_level = 0;

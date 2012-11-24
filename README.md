@@ -7,9 +7,21 @@
 forp is a lightweight PHP extension which provides CPU and memory profiling datas.
 
 ## PHP functions ##
-- forp_enable() : starts forp
-- forp_dump() : Array - forp stack
-- forp_print() : displays forp stack (CLI)
+- forp_start(<flags>) : start forp collector
+- forp_end() : stop forp collector
+- forp_dump() : return stack as flat array
+- forp_print() : display forp stack (SAPI CLI)
+
+## forp_start() flags ##
+
+- FORP_FLAG_CPU : actviate duration collect
+- FORP_FLAG_MEMORY : activate memory collect
+- FORP_FLAG_ANNOTATIONS : activate annotations handling
+
+## php.ini options ##
+
+- forp.max_nesting_level : default 50
+- forp.no_internals : default 0
 
 ## Function annotations  ##
 
