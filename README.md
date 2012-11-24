@@ -4,7 +4,7 @@
 
 # Introduction #
 
-forp is a lightweight PHP extension which provides CPU and memory profiling datas.
+forp is a lightweight PHP extension which provides duration and memory profiling datas. forp is non intrusive, it provides PHP annotations to complete its work.
 
 ## PHP functions ##
 - forp_start(<flags>) : start forp collector
@@ -14,7 +14,7 @@ forp is a lightweight PHP extension which provides CPU and memory profiling data
 
 ## forp_start() flags ##
 
-- FORP_FLAG_CPU : actviate duration collect
+- FORP_FLAG_CPU : activate duration collect
 - FORP_FLAG_MEMORY : activate memory collect
 - FORP_FLAG_ANNOTATIONS : activate annotations handling
 
