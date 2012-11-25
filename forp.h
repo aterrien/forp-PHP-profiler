@@ -24,8 +24,9 @@
 #include "TSRM.h"
 #endif
 
-#define FORP_NODE_TYPE_FUNCTION		0x0001
-#define FORP_NODE_TYPE_GROUP    	0x0002
+#define FORP_HIGHLIGHT_PREPEND    	"<div style='position: relative; border: 1px dashed #222; margin: 1px'>"
+#define FORP_HIGHLIGHT_APPEND    	"<div style='position: absolute; top: 0px; right: 0px; background: #222; color: #fff; padding: 0px 0px 3px 3px; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; font-size: 10px; font-weight: 300;'>%.03f ms, %d b, level %d</div></div>"
+
 
 typedef struct forp_function_t {
     char *filename;
@@ -33,7 +34,9 @@ typedef struct forp_function_t {
     char *function;
     int lineno;
     int type;
-    char *group;
+    char **groups;
+    int groups_len;
+    char *highlight;
 } forp_function_t;
 
 
@@ -47,6 +50,7 @@ typedef struct forp_node_t {
     int level;
     struct forp_node_t *parent;
     char *caption;
+    char *alias; // node alias
 
     // Type node specific
     //forp_group_t group;
@@ -76,13 +80,17 @@ void forp_execute_internal(zend_execute_data *current_execute_data, int return_v
 /* public functions */
 static void forp_populate_function(forp_function_t *function, zend_execute_data *edata, zend_op_array *op_array TSRMLS_DC);
 
-forp_node_t *forp_begin(zend_execute_data *edata, zend_op_array *op_array TSRMLS_DC);
-
-void forp_info();
+void forp_info(TSRMLS_D);
 
 zend_op_array *forp_compile_file(zend_file_handle *file_handle, int type TSRMLS_DC);
 
-void forp_end(forp_node_t *pn TSRMLS_DC);
+void forp_start(TSRMLS_D);
+
+void forp_end(TSRMLS_D);
+
+forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TSRMLS_DC);
+
+void forp_close_node(forp_node_t *pn TSRMLS_DC);
 
 void forp_execute(zend_op_array *op_array TSRMLS_DC);
 
@@ -110,7 +118,7 @@ char* forp_strndup(const char* s, size_t n) {
 }
 char *forp_strndup(const char *s, size_t n);
 #define strndup(s,n) forp_strndup(s, n)
-#endif*/
+#endif
 
 #endif  /* FORP_H */
 
