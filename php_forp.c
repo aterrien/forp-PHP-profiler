@@ -190,6 +190,7 @@ ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp) {
 /* {{{ forp_enable
  */
 ZEND_FUNCTION(forp_enable) {
+    long opt = -1;
 
     php_error_docref(
                 NULL TSRMLS_CC,
@@ -197,7 +198,6 @@ ZEND_FUNCTION(forp_enable) {
                 "forp_enable() is deprecated, use forp_start()."
                 );
 
-    long opt = -1;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &opt) == FAILURE) {
         return;
     }

@@ -298,6 +298,9 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
     struct timeval tv;
     forp_node_t *n;
     int key;
+    zval *expr;
+    zval expr_copy;
+    int use_copy;
 
     // Inits node
     n = emalloc(sizeof (forp_node_t));
@@ -363,22 +366,21 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
 
                 char c[4];
                 char *v;
+                char *dump;
 
                 sprintf(c, "#%d", params_count - i + 1);
 
-                zval *expr;
                 expr = *((zval **) (params - i));
 
                 // Uses zend_make_printable_zval
-                zval expr_copy;
-                int use_copy;
                 zend_make_printable_zval(expr, &expr_copy, &use_copy);
                 if(use_copy) {
-                    v = strdup((char*)(expr_copy).value.str.val);
+                    dump = (char*)(expr_copy).value.str.val;
                     zval_dtor(&expr_copy);
                 } else {
-                    v = strdup((char*)(*expr).value.str.val);
+                    dump = (char*)(*expr).value.str.val;
                 }
+                v = strdup(dump);
 
                 n->caption = forp_str_replace(
                     c, v,
@@ -553,7 +555,8 @@ void forp_execute_internal(zend_execute_data *current_execute_data, int ret TSRM
 void forp_stack_dump(TSRMLS_D) {
     int i;
     zval *t;
-
+    int j = 0;
+    
     MAKE_STD_ZVAL(FORP_G(dump));
     array_init(FORP_G(dump));
 
@@ -593,7 +596,6 @@ void forp_stack_dump(TSRMLS_D) {
             zval *groups;
             MAKE_STD_ZVAL(groups);
             array_init(groups);
-            int j = 0;
             while(j < n->function.groups_len) {
                 add_next_index_string(groups, n->function.groups[j], 1);
                 j++;
