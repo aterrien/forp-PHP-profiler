@@ -194,6 +194,9 @@ forp_node_t *forp_begin(zend_execute_data *edata, zend_op_array *op_array TSRMLS
     struct timeval tv;
     forp_node_t *n;
     int key;
+    zval *expr;
+    zval expr_copy;
+    int use_copy;
 
     // Inits node
     n = emalloc(sizeof (forp_node_t));
@@ -246,22 +249,21 @@ forp_node_t *forp_begin(zend_execute_data *edata, zend_op_array *op_array TSRMLS
 
                 char c[4];
                 char *v;
+                char *dump;
 
                 sprintf(c, "#%d", params_count - i + 1);
 
-                zval *expr;
                 expr = *((zval **) (params - i));
 
                 // Uses zend_make_printable_zval
-                zval expr_copy;
-                int use_copy;
                 zend_make_printable_zval(expr, &expr_copy, &use_copy);
                 if(use_copy) {
-                    v = strdup((char*)(expr_copy).value.str.val);
+                    dump = (char*)(expr_copy).value.str.val;
                     zval_dtor(&expr_copy);
                 } else {
-                    v = strdup((char*)(*expr).value.str.val);
+                    dump = (char*)(*expr).value.str.val;
                 }
+                v = strdup(dump);
                 /*switch(Z_TYPE_P(expr)) {
                     case IS_STRING :
                         v = strdup((char*)(*expr).value.str.val);

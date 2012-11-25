@@ -94,6 +94,24 @@ void forp_stack_dump_cli_node(forp_node_t *node TSRMLS_DC);
 
 void forp_stack_dump_cli(TSRMLS_D);
 
+#ifndef POSIX
+char* forp_strndup(const char* s, size_t n) {
+    size_t slen = (size_t)strlen(s);
+    char* copy;
+    if (slen < n) {
+        n = slen;
+    }
+    copy = malloc(n+1);
+    if (copy) {
+        memcpy(copy, s, n);
+        copy[n] = 0;
+    }
+    return copy;
+}
+char *forp_strndup(const char *s, size_t n);
+#define strndup(s,n) forp_strndup(s, n)
+#endif*/
+
 #endif  /* FORP_H */
 
 /*
