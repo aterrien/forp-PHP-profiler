@@ -176,8 +176,7 @@ void forp_annotation_array(const char *doc_comment, char *tag, char ***args, int
  * @param char* replace
  * @return char*
  */
-char *forp_substr_replace(char *subject, char *replace, unsigned int start, unsigned int len)
-{
+char *forp_substr_replace(char *subject, char *replace, unsigned int start, unsigned int len) {
    char *ns = NULL;
    size_t size;
    if (
@@ -298,6 +297,11 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
     struct timeval tv;
     forp_node_t *n;
     int key;
+    double start_time;
+
+    // self duration on open
+    gettimeofday(&tv, NULL);
+    start_time = tv.tv_sec * 1000000.0 + tv.tv_usec;
 
     // Inits node
     n = emalloc(sizeof (forp_node_t));
@@ -309,11 +313,19 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
     n->time_end = 0;
     n->time = 0;
 
+    n->profiler_duration = 0;
+
     n->mem_begin = 0;
     n->mem_end = 0;
     n->mem = 0;
 
-    // First thing to do, handle node annotations to know what to do
+    // Annotations
+    n->alias = NULL;
+    n->caption = NULL;
+    n->function.groups = NULL;
+    n->function.groups_len = 0;
+
+    // Handles fn annotations to know what to do
     if((FORP_G(flags) & FORP_FLAG_ANNOTATIONS) && op_array && op_array->doc_comment) {
 
         // TODO Optimize it !
@@ -331,13 +343,9 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
 
         // Frame
         n->function.highlight = forp_annotation_string(op_array->doc_comment, "ProfileHighlight" TSRMLS_CC);
-        if(n->function.highlight) php_printf(FORP_HIGHLIGHT_PREPEND);
+        if(n->function.highlight) php_printf(FORP_HIGHLIGHT_BEGIN);
 
     } else {
-        n->alias = NULL;
-        n->caption = NULL;
-        n->function.groups = NULL;
-        n->function.groups_len = 0;
         n->function.highlight = NULL;
     }
 
@@ -413,6 +421,7 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
     if(FORP_G(flags) & FORP_FLAG_CPU) {
         gettimeofday(&tv, NULL);
         n->time_begin = tv.tv_sec * 1000000.0 + tv.tv_usec;
+        n->profiler_duration = n->time_begin - start_time;
     }
 
     return n;
@@ -437,11 +446,17 @@ void forp_close_node(forp_node_t *n TSRMLS_DC) {
     }
 
     if(n->function.highlight) {
-        php_printf(FORP_HIGHLIGHT_APPEND, (n->time / 1000), (n->mem / 1024), n->level);
+        php_printf(FORP_HIGHLIGHT_END, (n->time / 1000), (n->mem / 1024), n->level);
     }
 
     FORP_G(current_node) = n->parent;
     FORP_G(nesting_level)--;
+
+    // self duration on exit
+    if(FORP_G(flags) & FORP_FLAG_CPU) {
+        gettimeofday(&tv, NULL);
+        n->profiler_duration += (tv.tv_sec * 1000000.0 + tv.tv_usec) - n->time_end ;
+    }
 }
 /* }}} */
 
@@ -514,6 +529,7 @@ zend_op_array *forp_compile_file(zend_file_handle *file_handle, int type TSRMLS_
     return old_compile_file(file_handle, type TSRMLS_CC);
 }
 /* }}} */
+
 /* {{{ forp_execute
  */
 void forp_execute(zend_op_array *op_array TSRMLS_DC) {
@@ -531,7 +547,8 @@ void forp_execute(zend_op_array *op_array TSRMLS_DC) {
 
 /* {{{ forp_execute_internal
  */
-void forp_execute_internal(zend_execute_data *current_execute_data, int ret TSRMLS_DC) {
+void forp_execute_internal(zend_execute_data *current_execute_data, int ret TSRMLS_DC)
+{
     forp_node_t *n;
 
     if (FORP_G(nesting_level) > FORP_G(max_nesting_level)) {
@@ -605,10 +622,14 @@ void forp_stack_dump(TSRMLS_D) {
             add_assoc_string(t, FORP_DUMP_ASSOC_CAPTION, n->caption, 1);
 
         if(FORP_G(flags) & FORP_FLAG_CPU) {
-            zval *time;
+            zval *time, *profiler_duration;
             MAKE_STD_ZVAL(time);
             ZVAL_DOUBLE(time, round(n->time * 1000000.0) / 1000000.0);
-            add_assoc_zval(t, FORP_DUMP_ASSOC_CPU, time);
+            add_assoc_zval(t, FORP_DUMP_ASSOC_DURATION, time);
+
+            MAKE_STD_ZVAL(profiler_duration);
+            ZVAL_DOUBLE(profiler_duration, round(n->profiler_duration * 1000000.0) / 1000000.0);
+            add_assoc_zval(t, FORP_DUMP_ASSOC_PROFILERDURATION, profiler_duration);
         }
 
         if(FORP_G(flags) & FORP_FLAG_MEMORY) {

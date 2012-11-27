@@ -24,8 +24,8 @@
 #include "TSRM.h"
 #endif
 
-#define FORP_HIGHLIGHT_PREPEND    	"<div style='position: relative; border: 1px dashed #222; margin: 1px'>"
-#define FORP_HIGHLIGHT_APPEND    	"<div style='position: absolute; top: 0px; right: 0px; background: #222; color: #fff; padding: 0px 0px 3px 3px; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; font-size: 10px; font-weight: 300;'>%.03f ms, %d b, level %d</div></div>"
+#define FORP_HIGHLIGHT_BEGIN    "<div style='position: relative; border: 1px solid #222; margin: 1px'>"
+#define FORP_HIGHLIGHT_END    	"<div style='position: absolute; top: 0px; right: 0px; background: #222; color: #fff; padding: 0px 5px 3px 5px; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; font-size: 10px; font-weight: 300;'>%.03f ms, %d b, level %d</div></div>"
 
 
 typedef struct forp_function_t {
@@ -65,6 +65,9 @@ typedef struct forp_node_t {
     double time;
     double time_begin;
     double time_end;
+
+    // Self cost
+    double profiler_duration;
 } forp_node_t;
 
 /* proxy */
@@ -77,7 +80,20 @@ void forp_execute(zend_op_array *op_array TSRMLS_DC);
 void (*old_execute_internal)(zend_execute_data *current_execute_data, int return_value_used TSRMLS_DC);
 void forp_execute_internal(zend_execute_data *current_execute_data, int return_value_used TSRMLS_DC);
 
-/* public functions */
+
+
+void forp_annotation_args(char *str, char ***args, int *args_count TSRMLS_DC);
+
+char *forp_annotation_tok(const char *doc_comment, char *tag TSRMLS_DC);
+
+char *forp_annotation_string(const char *doc_comment, char *tag TSRMLS_DC);
+
+void forp_annotation_array(const char *doc_comment, char *tag, char ***args, int *args_count TSRMLS_DC);
+
+char *forp_substr_replace(char *subject, char *replace, unsigned int start, unsigned int len);
+
+char *forp_str_replace(char *search, char *replace, char *subject TSRMLS_DC);
+
 static void forp_populate_function(forp_function_t *function, zend_execute_data *edata, zend_op_array *op_array TSRMLS_DC);
 
 void forp_info(TSRMLS_D);
@@ -101,6 +117,7 @@ void forp_stack_dump(TSRMLS_D);
 void forp_stack_dump_cli_node(forp_node_t *node TSRMLS_DC);
 
 void forp_stack_dump_cli(TSRMLS_D);
+
 
 #endif  /* FORP_H */
 

@@ -162,6 +162,7 @@ ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp) {
 
     // TODO track not terminated node
 
+    FORP_G(started) = 0;
     FORP_G(nesting_level) = 0;
     FORP_G(current_node) = NULL;
 
