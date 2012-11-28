@@ -81,6 +81,9 @@ void (*old_execute_internal)(zend_execute_data *current_execute_data, int return
 void forp_execute_internal(zend_execute_data *current_execute_data, int return_value_used TSRMLS_DC);
 
 
+#ifndef POSIX
+char* forp_strndup(const char* s, size_t n);
+#endif
 
 void forp_annotation_args(char *str, char ***args, int *args_count TSRMLS_DC);
 
@@ -117,7 +120,6 @@ void forp_stack_dump(TSRMLS_D);
 void forp_stack_dump_cli_node(forp_node_t *node TSRMLS_DC);
 
 void forp_stack_dump_cli(TSRMLS_D);
-
 
 #endif  /* FORP_H */
 
