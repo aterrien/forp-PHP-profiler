@@ -23,7 +23,7 @@ forp is a lightweight PHP extension which provides duration and memory profiling
 - forp.max_nesting_level : default 50
 - forp.no_internals : default 0
 
-## Function annotations  ##
+## Annotations  ##
 
 - @ProfileGroup
 
