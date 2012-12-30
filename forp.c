@@ -586,6 +586,7 @@ void forp_execute_internal(zend_execute_data *current_execute_data, int ret TSRM
  */
 void forp_stack_dump(TSRMLS_D) {
     int i;
+    int j = 0;
     zval *t;
 
     MAKE_STD_ZVAL(FORP_G(dump));
@@ -627,7 +628,7 @@ void forp_stack_dump(TSRMLS_D) {
             zval *groups;
             MAKE_STD_ZVAL(groups);
             array_init(groups);
-            int j = 0;
+            j = 0;
             while(j < n->function.groups_len) {
                 add_next_index_string(groups, n->function.groups[j], 1);
                 j++;

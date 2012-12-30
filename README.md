@@ -1,10 +1,64 @@
 !under development!
 
-[![Build Status](https://secure.travis-ci.org/aterrien/forp.png)](http://travis-ci.org/aterrien/forp)
-
 # Introduction #
 
 forp is a lightweight PHP extension which provides duration and memory profiling datas. forp is non intrusive, it provides PHP annotations to complete its work.
+
+
+## Simple (almost the most complicated) example ##
+
+Example :
+```php
+<?php
+// first thing to do, enable forp profiler
+forp_start();
+
+// here, our PHP code we want to profile
+function foo()
+{
+    echo 'Hello world !';
+};
+foo();
+
+// stop forp buffering
+forp_end();
+
+// get the stack as an array
+$profileStack = forp_dump();
+
+print_r($profileStack);
+```
+
+Result :
+```
+foo = Hello world !
+forp stack =
+Array
+(
+    [0] => Array
+        (
+            [file] => /forp/example.php
+            [function] => {main}
+            [usec] => 94
+            [pusec] => 14
+            [bytes] => 524
+            [level] => 0
+        )
+
+    [1] => Array
+        (
+            [file] => /forp/example.php
+            [function] => foo
+            [lineno] => 10
+            [usec] => 9
+            [pusec] => 8
+            [bytes] => 132
+            [level] => 1
+            [parent] => 0
+        )
+
+)
+```
 
 ## PHP functions ##
 - forp_start(<flags>) : start forp collector
@@ -76,6 +130,10 @@ function render($datas) {
     /* ... */
 }
 ```
+
+## Build status ##
+
+[![Build Status](https://secure.travis-ci.org/aterrien/forp.png)](http://travis-ci.org/aterrien/forp)
 
 ## Linux Install ##
 
