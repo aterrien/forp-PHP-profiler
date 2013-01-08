@@ -387,22 +387,30 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
             for(i = 1; i <= params_count; i++) {
 
                 char c[4];
-                char *v;
-
-                sprintf(c, "#%d", params_count - i + 1);
-
+                char *v, *v_copy;
                 zval *expr;
-                expr = *((zval **) (params - i));
-
-                // Uses zend_make_printable_zval
                 zval expr_copy;
                 int use_copy;
-                zend_make_printable_zval(expr, &expr_copy, &use_copy);
-                if(use_copy) {
-                    v = strdup((char*)(expr_copy).value.str.val);
-                    zval_dtor(&expr_copy);
+
+                sprintf(c, "#%d", params_count - i + 1);
+                expr = *((zval **) (params - i));
+
+                if(Z_TYPE_P(expr) == IS_OBJECT) {
+                    // Object or Closure
+                    // Closure throws a Recoverable Fatal in zend_make_printable_zval
+                    v_copy = emalloc(sizeof(char*) * (strlen(Z_OBJCE_P(expr)->name) + 2));
+                    sprintf(v_copy, "(%s)", Z_OBJCE_P(expr)->name);
+                    v = strdup(v_copy);
+                    efree(v_copy);
                 } else {
-                    v = strdup((char*)(*expr).value.str.val);
+                    // Uses zend_make_printable_zval
+                    zend_make_printable_zval(expr, &expr_copy, &use_copy);
+                    if(use_copy) {
+                        v = strdup((char*)(expr_copy).value.str.val);
+                        zval_dtor(&expr_copy);
+                    } else {
+                        v = strdup((char*)(*expr).value.str.val);
+                    }
                 }
 
                 n->caption = forp_str_replace(

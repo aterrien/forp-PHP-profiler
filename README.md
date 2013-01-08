@@ -2,7 +2,7 @@
 
 # Introduction #
 
-forp is a lightweight PHP extension which provides duration and memory profiling datas. forp is non intrusive, it provides PHP annotations to complete its work.
+forp is a lightweight PHP extension which provides duration and memory profiling datas. forp is non intrusive, it provides PHP annotations to do its work.
 
 
 ## Simple (almost the most complicated) example ##
@@ -61,7 +61,7 @@ Array
 ```
 
 ## PHP functions ##
-- forp_start(<flags>) : start forp collector
+- forp_start(flags*) : start forp collector
 - forp_end() : stop forp collector
 - forp_dump() : return stack as flat array
 - forp_print() : display forp stack (SAPI CLI)
