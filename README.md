@@ -1,9 +1,13 @@
-!under development!
-
 # Introduction #
 
-forp is a lightweight PHP extension which provides duration and memory profiling datas. forp is non intrusive, it provides PHP annotations to do its work.
+forp is a lightweight PHP extension which provides call stack with duration and memory informations.
 
+forp is non intrusive, it provides PHP annotations to do its work.
+
+Extra features :
+- caption referencing function args
+- groups for grouping functions transversely
+- aliases of function (useful for anonymous functions)
 
 ## Simple (almost the most complicated) example ##
 
