@@ -1,6 +1,6 @@
 # Introduction #
 
-forp is a lightweight PHP extension which provides call stack with duration and memory informations.
+forp is a lightweight PHP extension which provides PHP profiling datas with duration and memory informations.
 
 forp is non intrusive, it provides PHP annotations to do its work.
 
