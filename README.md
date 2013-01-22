@@ -257,7 +257,7 @@ https://github.com/downloads/ichiriac/forp/php53_x86_nts_forp.dll
 
 # Authors #
 
-[Anthony Terrien](https://github.com/aterrien/)
+[Anthony Terrien](https://github.com/aterrien/), 
 [Ioan Chiriac](https://github.com/ichiriac/)
 
 # MIT License
