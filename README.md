@@ -12,7 +12,7 @@ Summary of features :
 
 forp is non intrusive, it provides PHP annotations to do its work.
 
-## Simple (almost the most complicated) example ##
+# Simple (almost the most complicated) example #
 
 Example :
 ```php
@@ -73,7 +73,7 @@ Array
 )
 ```
 
-## Example with annotations ##
+# Example with annotations #
 
 Example :
 ```php
@@ -150,7 +150,7 @@ Array
 ```
 
 
-## forp PHP API ##
+# forp PHP API #
 
 - forp_start(flags*) : start forp collector
 - forp_end() : stop forp collector
@@ -223,9 +223,11 @@ function render($datas) {
 }
 ```
 
-## Build status ##
+# Build status #
 
 [![Build Status](https://secure.travis-ci.org/aterrien/forp.png)](http://travis-ci.org/aterrien/forp)
+
+# Installation #
 
 ## Linux Install ##
 
@@ -253,3 +255,28 @@ https://github.com/downloads/ichiriac/forp/php53_x86_ts_forp.dll
 For PHP 5.3 - Non Thread Safe :
 https://github.com/downloads/ichiriac/forp/php53_x86_nts_forp.dll
 
+# Authors #
+
+[Anthony Terrien](https://github.com/aterrien/)
+[Ioan Chiriac](https://github.com/ichiriac/)
+
+# MIT License
+
+Copyright (C) 2013 Anthony Terrien
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
