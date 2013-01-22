@@ -24,15 +24,16 @@
 #define FORP_DUMP_ASSOC_FUNCTION            "function"
 #define FORP_DUMP_ASSOC_LINENO              "lineno"
 #define FORP_DUMP_ASSOC_DURATION            "usec"
-#define FORP_DUMP_ASSOC_PROFILERDURATION    "pusec"
+#define FORP_DUMP_ASSOC_PROFILERTIME        "pusec"
 #define FORP_DUMP_ASSOC_MEMORY              "bytes"
 #define FORP_DUMP_ASSOC_LEVEL               "level"
 #define FORP_DUMP_ASSOC_PARENT              "parent"
 #define FORP_DUMP_ASSOC_GROUPS              "groups"
 #define FORP_DUMP_ASSOC_CAPTION             "caption"
-#define FORP_FLAG_CPU                       0x0001
+#define FORP_FLAG_TIME                      0x0001
 #define FORP_FLAG_MEMORY                    0x0002
 #define FORP_FLAG_ANNOTATIONS               0x0004
+#define FORP_FLAG_CPU                       0x0008
 
 extern zend_module_entry forp_module_entry;
 #define phpext_forp_ptr &forp_module_entry
@@ -51,6 +52,7 @@ extern zend_module_entry forp_module_entry;
 
 PHP_MINIT_FUNCTION(forp);
 PHP_MSHUTDOWN_FUNCTION(forp);
+//PHP_RINIT_FUNCTION(forp);
 PHP_RSHUTDOWN_FUNCTION(forp);
 PHP_MINFO_FUNCTION(forp);
 ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp);
@@ -74,6 +76,8 @@ ZEND_BEGIN_MODULE_GLOBALS(forp)
 	zval *dump;
 	long max_nesting_level;
 	int no_internals;
+    double stime;
+    double utime;
 ZEND_END_MODULE_GLOBALS(forp)
 
 ZEND_DECLARE_MODULE_GLOBALS(forp);

@@ -35,6 +35,10 @@ static inline double round(double val) {
 }
 #endif
 
+#if HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
+
 #ifndef POSIX
 char* forp_strndup(const char* s, size_t n) {
     size_t slen = (size_t)strlen(s);
@@ -354,7 +358,8 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
         n->caption = forp_annotation_string(op_array->doc_comment, "ProfileCaption" TSRMLS_CC);
 
         // Group
-        n->function.groups = emalloc(sizeof(char*) * 10); // TODO precond 10 args max
+        // TODO no alloc / erealloc when group found
+        n->function.groups = emalloc(sizeof(char*) * 10);
         n->function.groups_len = 0;
         forp_annotation_array(op_array->doc_comment, "ProfileGroup", &(n->function.groups), &(n->function.groups_len) TSRMLS_CC);
 
@@ -384,6 +389,7 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
 #endif
             params_count = (ulong) *params;
 
+            // TODO extract only required parameters
             for(i = 1; i <= params_count; i++) {
 
                 char c[4];
@@ -443,7 +449,7 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
         n->mem_begin = zend_memory_usage(0 TSRMLS_CC);
     }
 
-    if(FORP_G(flags) & FORP_FLAG_CPU) {
+    if(FORP_G(flags) & FORP_FLAG_TIME) {
         gettimeofday(&tv, NULL);
         n->time_begin = tv.tv_sec * 1000000.0 + tv.tv_usec;
         n->profiler_duration = n->time_begin - start_time;
@@ -459,7 +465,7 @@ void forp_close_node(forp_node_t *n TSRMLS_DC) {
     struct timeval tv;
 
     // dump duration and memory before next steps
-    if(FORP_G(flags) & FORP_FLAG_CPU) {
+    if(FORP_G(flags) & FORP_FLAG_TIME) {
         gettimeofday(&tv, NULL);
         n->time_end = tv.tv_sec * 1000000.0 + tv.tv_usec;
         n->time = n->time_end - n->time_begin;
@@ -478,7 +484,7 @@ void forp_close_node(forp_node_t *n TSRMLS_DC) {
     FORP_G(nesting_level)--;
 
     // self duration on exit
-    if(FORP_G(flags) & FORP_FLAG_CPU) {
+    if(FORP_G(flags) & FORP_FLAG_TIME) {
         gettimeofday(&tv, NULL);
         n->profiler_duration += (tv.tv_sec * 1000000.0 + tv.tv_usec) - n->time_end ;
     }
@@ -497,6 +503,15 @@ void forp_start(TSRMLS_D) {
             );
     } else {
         FORP_G(started) = 1;
+
+#if HAVE_SYS_RESOURCE_H
+        if(FORP_G(flags) & FORP_FLAG_CPU) {
+            struct rusage ru;
+            getrusage(RUSAGE_SELF, &ru);
+            FORP_G(utime) = ru.ru_utime.tv_sec * 1000000.0 + ru.ru_utime.tv_usec;
+            FORP_G(stime) = ru.ru_stime.tv_sec * 1000000.0 + ru.ru_stime.tv_usec;
+        }
+#endif
 
         // Proxying zend api methods
         old_execute = zend_execute;
@@ -520,6 +535,15 @@ void forp_start(TSRMLS_D) {
 void forp_end(TSRMLS_D) {
 
     if(FORP_G(started)) {
+
+#if HAVE_SYS_RESOURCE_H
+        if(FORP_G(flags) & FORP_FLAG_CPU) {
+            struct rusage ru;
+            getrusage(RUSAGE_SELF, &ru);
+            FORP_G(utime) = (ru.ru_utime.tv_sec * 1000000.0 + ru.ru_utime.tv_usec) - FORP_G(utime);
+            FORP_G(stime) = (ru.ru_stime.tv_sec * 1000000.0 + ru.ru_stime.tv_usec) - FORP_G(stime);
+        }
+#endif
 
         // Close main
         forp_close_node(FORP_G(main) TSRMLS_CC);
@@ -595,10 +619,27 @@ void forp_execute_internal(zend_execute_data *current_execute_data, int ret TSRM
 void forp_stack_dump(TSRMLS_D) {
     int i;
     int j = 0;
-    zval *t;
+    zval *entry, *stack;
+
+    /**
+     * array(
+     *  'stime' => ,
+     *  'utime' => ,
+     *  'stack' => array(... entry+ ...)
+     * )
+     */
 
     MAKE_STD_ZVAL(FORP_G(dump));
     array_init(FORP_G(dump));
+
+    if(FORP_G(flags) & FORP_FLAG_CPU) {
+        add_assoc_double(FORP_G(dump), "utime", FORP_G(utime));
+        add_assoc_double(FORP_G(dump), "stime", FORP_G(stime));
+    }
+
+    MAKE_STD_ZVAL(stack);
+    array_init(stack);
+    add_assoc_zval(FORP_G(dump), "stack", stack);
 
     for (i = 0; i < FORP_G(stack_len); ++i) {
         forp_node_t *n;
@@ -614,23 +655,23 @@ void forp_stack_dump(TSRMLS_D) {
         }
 
         // stack entry
-        MAKE_STD_ZVAL(t);
-        array_init(t);
+        MAKE_STD_ZVAL(entry);
+        array_init(entry);
 
         if (n->function.filename)
-            add_assoc_string(t, FORP_DUMP_ASSOC_FILE, n->function.filename, 1);
+            add_assoc_string(entry, FORP_DUMP_ASSOC_FILE, n->function.filename, 1);
 
         if (n->function.class)
-            add_assoc_string(t, FORP_DUMP_ASSOC_CLASS, n->function.class, 1);
+            add_assoc_string(entry, FORP_DUMP_ASSOC_CLASS, n->function.class, 1);
 
         if(n->alias) {
-            add_assoc_string(t, FORP_DUMP_ASSOC_FUNCTION, n->alias, 1);
+            add_assoc_string(entry, FORP_DUMP_ASSOC_FUNCTION, n->alias, 1);
         } else if (n->function.function) {
-            add_assoc_string(t, FORP_DUMP_ASSOC_FUNCTION, n->function.function, 1);
+            add_assoc_string(entry, FORP_DUMP_ASSOC_FUNCTION, n->function.function, 1);
         }
 
         if (n->function.lineno)
-            add_assoc_long(t, FORP_DUMP_ASSOC_LINENO, n->function.lineno);
+            add_assoc_long(entry, FORP_DUMP_ASSOC_LINENO, n->function.lineno);
 
         if (n->function.groups && n->function.groups_len > 0) {
             zval *groups;
@@ -641,34 +682,38 @@ void forp_stack_dump(TSRMLS_D) {
                 add_next_index_string(groups, n->function.groups[j], 1);
                 j++;
             }
-            add_assoc_zval(t, FORP_DUMP_ASSOC_GROUPS, groups);
+            add_assoc_zval(entry, FORP_DUMP_ASSOC_GROUPS, groups);
         }
 
-        if (n->caption)
-            add_assoc_string(t, FORP_DUMP_ASSOC_CAPTION, n->caption, 1);
+        if (n->caption) {
+            add_assoc_string(entry, FORP_DUMP_ASSOC_CAPTION, n->caption, 1);
+        }
 
-        if(FORP_G(flags) & FORP_FLAG_CPU) {
+        if(FORP_G(flags) & FORP_FLAG_TIME) {
             zval *time, *profiler_duration;
             MAKE_STD_ZVAL(time);
             ZVAL_DOUBLE(time, round(n->time * 1000000.0) / 1000000.0);
-            add_assoc_zval(t, FORP_DUMP_ASSOC_DURATION, time);
+            add_assoc_zval(entry, FORP_DUMP_ASSOC_DURATION, time);
 
             MAKE_STD_ZVAL(profiler_duration);
             ZVAL_DOUBLE(profiler_duration, round(n->profiler_duration * 1000000.0) / 1000000.0);
-            add_assoc_zval(t, FORP_DUMP_ASSOC_PROFILERDURATION, profiler_duration);
+            add_assoc_zval(entry, FORP_DUMP_ASSOC_PROFILERTIME, profiler_duration);
         }
 
         if(FORP_G(flags) & FORP_FLAG_MEMORY) {
-            add_assoc_long(t, FORP_DUMP_ASSOC_MEMORY, n->mem);
+            add_assoc_long(entry, FORP_DUMP_ASSOC_MEMORY, n->mem);
         }
 
-        add_assoc_long(t, FORP_DUMP_ASSOC_LEVEL, n->level);
+        add_assoc_long(entry, FORP_DUMP_ASSOC_LEVEL, n->level);
 
         // {main} don't have parent
         if (n->parent)
-            add_assoc_long(t, FORP_DUMP_ASSOC_PARENT, n->parent->key);
+            add_assoc_long(entry, FORP_DUMP_ASSOC_PARENT, n->parent->key);
 
-        if (zend_hash_next_index_insert(Z_ARRVAL_P(FORP_G(dump)), (void *) &t, sizeof (zval *), NULL) == FAILURE) {
+        if (
+            zend_hash_next_index_insert(Z_ARRVAL_P(stack), (void *) &entry,
+            sizeof (zval *), NULL) == FAILURE
+        ) {
             return;
         }
     }
@@ -680,7 +725,7 @@ void forp_stack_dump(TSRMLS_D) {
 void forp_stack_dump_cli_node(forp_node_t *node TSRMLS_DC) {
     int j;
 
-    if(FORP_G(flags) & FORP_FLAG_CPU) {
+    if(FORP_G(flags) & FORP_FLAG_TIME) {
         php_printf("[time:%09.0f] ", node->time);
     }
     if(FORP_G(flags) & FORP_FLAG_MEMORY) {

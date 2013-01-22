@@ -1,13 +1,16 @@
 # Introduction #
 
-forp is a lightweight PHP extension which provides PHP profiling datas with duration and memory informations.
+forp is a lightweight PHP extension which provides PHP profile datas.
+
+Summary of features :
+- measurement of time and allocated memory for each function
+- CPU usage
+- file and line number of the function call
+- caption of functions
+- grouping of functions
+- aliases of functions (useful for anonymous functions)
 
 forp is non intrusive, it provides PHP annotations to do its work.
-
-Extra features :
-- caption referencing function args
-- groups for grouping functions transversely
-- aliases of function (useful for anonymous functions)
 
 ## Simple (almost the most complicated) example ##
 
@@ -39,32 +42,116 @@ foo = Hello world !
 forp stack =
 Array
 (
-    [0] => Array
+    [utime] => 0
+    [stime] => 0
+    [stack] => Array
         (
-            [file] => /forp/example.php
-            [function] => {main}
-            [usec] => 94
-            [pusec] => 14
-            [bytes] => 524
-            [level] => 0
-        )
+            [0] => Array
+                (
+                    [file] => /home/anthony/phpsrc/php-5.3.8/ext/forp/README.php
+                    [function] => {main}
+                    [usec] => 94
+                    [pusec] => 6
+                    [bytes] => 524
+                    [level] => 0
+                )
 
-    [1] => Array
-        (
-            [file] => /forp/example.php
-            [function] => foo
-            [lineno] => 10
-            [usec] => 9
-            [pusec] => 8
-            [bytes] => 132
-            [level] => 1
-            [parent] => 0
+            [1] => Array
+                (
+                    [file] => /home/anthony/phpsrc/php-5.3.8/ext/forp/README.php
+                    [function] => foo
+                    [lineno] => 10
+                    [usec] => 9
+                    [pusec] => 6
+                    [bytes] => 120
+                    [level] => 1
+                    [parent] => 0
+                )
+
         )
 
 )
 ```
 
-## PHP functions ##
+## Example with annotations ##
+
+Example :
+```php
+<?php
+// first thing to do, enable forp profiler
+forp_start();
+
+/**
+ * here, our PHP code we want to profile
+ * with annotations
+ *
+ * @ProfileGroup("Test")
+ * @ProfileCaption("Foo #1")
+ * @ProfileAlias("foo")
+ */
+function fooWithAnnotations($bar)
+{
+    return 'Foo ' . $bar;
+}
+
+echo "foo = " . fooWithAnnotations("bar") . "\n";
+
+// stop forp buffering
+forp_end();
+
+// get the stack as an array
+$profileStack = forp_dump();
+
+echo "forp stack = \n";
+print_r($profileStack);
+```
+
+Result :
+```
+foo = Foo bar
+forp stack =
+Array
+(
+    [utime] => 0
+    [stime] => 0
+    [stack] => Array
+        (
+            [0] => Array
+                (
+                    [file] => /home/anthony/phpsrc/php-5.3.8/ext/forp/READMEforp.php
+                    [function] => {main}
+                    [usec] => 113
+                    [pusec] => 6
+                    [bytes] => 568
+                    [level] => 0
+                )
+
+            [1] => Array
+                (
+                    [file] => /home/anthony/phpsrc/php-5.3.8/ext/forp/READMEforp.php
+                    [function] => foo
+                    [lineno] => 41
+                    [groups] => Array
+                        (
+                            [0] => Test
+                        )
+
+                    [caption] => Foo bar
+                    [usec] => 39
+                    [pusec] => 24
+                    [bytes] => 124
+                    [level] => 1
+                    [parent] => 0
+                )
+
+        )
+
+)
+```
+
+
+## forp PHP API ##
+
 - forp_start(flags*) : start forp collector
 - forp_end() : stop forp collector
 - forp_dump() : return stack as flat array
@@ -72,16 +159,17 @@ Array
 
 ## forp_start() flags ##
 
-- FORP_FLAG_CPU : activate duration collect
-- FORP_FLAG_MEMORY : activate memory collect
-- FORP_FLAG_ANNOTATIONS : activate annotations handling
+- FORP_FLAG_CPU : activate collect of time
+- FORP_FLAG_MEMORY : activate collect of memory usage
+- FORP_FLAG_ANNOTATIONS : activate annotations handler
+- FORP_FLAG_CPU : retrieve the cpu usage
 
 ## php.ini options ##
 
 - forp.max_nesting_level : default 50
 - forp.no_internals : default 0
 
-## Annotations  ##
+## Available annotations ##
 
 - @ProfileGroup
 
@@ -98,7 +186,7 @@ function exec($query) {
 
 - @ProfileCaption
 
-Adds caption to function. Caption string may contain references (#<param num>) to parameters of the function.
+Adds caption to functions. Caption string may contain references (#<param num>) to parameters of the function.
 
 ```php
 /**
