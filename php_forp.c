@@ -39,7 +39,7 @@ const zend_function_entry forp_functions[] = {
     PHP_FE(forp_print, NULL)
     PHP_FE(forp_info, NULL)
     PHP_FE(forp_enable, NULL)
-    PHP_FE_END /* Must be the last line in forp_functions[] */
+    {NULL,NULL,NULL} /*PHP_FE_END*/
 };
 /* }}} */
 

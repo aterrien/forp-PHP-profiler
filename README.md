@@ -227,7 +227,7 @@ function render($datas) {
 
 [![Build Status](https://secure.travis-ci.org/aterrien/forp.png)](http://travis-ci.org/aterrien/forp)
 
-# Installation #
+# Installation, requirements #
 
 ## Linux Install ##
 
@@ -247,17 +247,29 @@ make install
 extension=forp.so
 ```
 
-## Win32 Install ##
+## Tested OS and platforms ##
 
-For PHP 5.3 - Thread Safe (by default) :
-https://github.com/downloads/ichiriac/forp/php53_x86_ts_forp.dll
+### Apache ###
 
-For PHP 5.3 - Non Thread Safe :
-https://github.com/downloads/ichiriac/forp/php53_x86_nts_forp.dll
+Server version: Apache/2.2.16 (Debian)
+Server built:   Apr  1 2012 06:40:07
 
-# Authors #
+PHP 5.3.8 (cli) (built: Sep 25 2012 22:55:18)
+Copyright (c) 1997-2011 The PHP Group
+Zend Engine v2.3.0, Copyright (c) 1998-2011 Zend Technologies
 
-[Anthony Terrien](https://github.com/aterrien/), 
+### Nginx / php-fpm ###
+
+nginx version: nginx/1.2.6
+
+PHP 5.3.21-1~dotdeb.0 (fpm-fcgi) (built: Jan 27 2013 11:32:08)
+Copyright (c) 1997-2013 The PHP Group
+Zend Engine v2.3.0, Copyright (c) 1998-2013 Zend Technologies
+    with Suhosin v0.9.32.1, Copyright (c) 2007-2010, by SektionEins GmbH
+
+# Contributors #
+
+[Anthony Terrien](https://github.com/aterrien/),
 [Ioan Chiriac](https://github.com/ichiriac/)
 
 # MIT License
