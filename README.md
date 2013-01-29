@@ -231,10 +231,23 @@ function render($datas) {
 
 ## Linux Install ##
 
-* make
+* download
+
+current release
+```sh
+wget https://github.com/aterrien/forp/archive/1.0.0.tar.gz
+tar -xvzf 1.0.0.tar.gz
+cd 1.0.0
+```
+
+or master (unstable)
 ```sh
 git clone https://github.com/aterrien/forp
 cd forp
+```
+
+* install
+```sh
 phpize
 ./configure
 make
