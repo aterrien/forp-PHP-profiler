@@ -4,7 +4,7 @@ forp_dump() function
 <?php if (!extension_loaded("forp")) print "skip"; ?>
 --FILE--
 <?php
-forp_enable();
+forp_start();
 function foo() {
 	print "bar";
 }

@@ -34,4 +34,3 @@ $dump = forp_dump();
 print_r( $dump );
 echo '- Print'.$br;
 forp_print();
-sleep(10);
