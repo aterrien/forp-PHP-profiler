@@ -71,7 +71,7 @@ void forp_annotation_args(char *str, char ***args, int *args_count TSRMLS_DC) {
 
     *args_count = 0;
     if(strlen(str) > 0) {
-        ex = emalloc(sizeof(char*));
+        ex = malloc(sizeof(char*));
         while(str[i] != '\0') {
             if(!esc) {
                 if(str[i] == '\\') {
@@ -79,7 +79,7 @@ void forp_annotation_args(char *str, char ***args, int *args_count TSRMLS_DC) {
                 }
                 if((!esc) && str[i] == '"') {
                     if(buf && j > 0) {
-                        ex = erealloc(ex, sizeof(char*) * (j + 1));
+                        ex = realloc(ex, sizeof(char*) * (j + 1));
                         ex[j] = '\0';
                         (*args)[(*args_count)] = strdup(ex);
                         (*args_count)++;
@@ -89,14 +89,14 @@ void forp_annotation_args(char *str, char ***args, int *args_count TSRMLS_DC) {
                     buf = !buf;
                 } else {
                     if(buf) {
-                        ex = erealloc(ex, sizeof(char*) * (j + 1));
+                        ex = realloc(ex, sizeof(char*) * (j + 1));
                         ex[j] = str[i];
                         j++;
                     }
                 }
             } else {
                 if(buf) {
-                    ex = erealloc(ex, sizeof(char*) * (j + 1));
+                    ex = realloc(ex, sizeof(char*) * (j + 1));
                     ex[j] = str[i];
                     j++;
                 }
@@ -110,7 +110,7 @@ void forp_annotation_args(char *str, char ***args, int *args_count TSRMLS_DC) {
             //printf("NOT CLOSED \"!:|%s|\n", ex);
         //}
 
-        efree(ex);
+        free(ex);
     }
 }
 /* }}} */
@@ -127,7 +127,7 @@ char *forp_annotation_tok(const char *doc_comment, char *tag TSRMLS_DC) {
     char *v = NULL, *v_search = NULL, *t_start = NULL, *tmp = NULL, *eot = NULL;
     unsigned int v_start, v_end;
 
-    v_search = emalloc(sizeof(char*) * (strlen(tag) + 3));
+    v_search = malloc(sizeof(char*) * (strlen(tag) + 3));
     if(v_search) {
         sprintf(v_search, "@%s(", tag);
         t_start = strstr(doc_comment, v_search);
@@ -138,7 +138,7 @@ char *forp_annotation_tok(const char *doc_comment, char *tag TSRMLS_DC) {
             v_end = eot - tmp;
             v = strndup(doc_comment + v_start, v_end);
         }
-        efree(v_search);
+        free(v_search);
     }
 
     return v;
@@ -156,7 +156,7 @@ char *forp_annotation_tok(const char *doc_comment, char *tag TSRMLS_DC) {
 char *forp_annotation_string(const char *doc_comment, char *tag TSRMLS_DC) {
     int args_count;
     char *v = NULL;
-    char **args = emalloc(sizeof(char*));
+    char **args = malloc(sizeof(char*));
     char *args_str = forp_annotation_tok(doc_comment, tag TSRMLS_CC);
 
     if(args_str != NULL) {
@@ -165,7 +165,7 @@ char *forp_annotation_string(const char *doc_comment, char *tag TSRMLS_DC) {
             v = strdup(args[0]);
         }
     }
-    efree(args);
+    free(args);
 
     return v;
 }
@@ -205,14 +205,14 @@ char *forp_substr_replace(char *subject, char *replace, unsigned int start, unsi
         && start >= 0 && len > 0
    ) {
       size = strlen(subject);
-      ns = emalloc(sizeof(*ns) * (size - len + strlen(replace) + 1));
+      ns = malloc(sizeof(*ns) * (size - len + strlen(replace) + 1));
       if(ns) {
          memcpy(ns, subject, start);
          memcpy(&ns[start], replace, strlen(replace));
          memcpy(&ns[start + strlen(replace)], &subject[start + len], size - len - start + 1);
       }
       subject = strdup(ns);
-      efree(ns);
+      free(ns);
    }
    return subject;
 }
@@ -405,10 +405,10 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
                 if(Z_TYPE_P(expr) == IS_OBJECT) {
                     // Object or Closure
                     // Closure throws a Recoverable Fatal in zend_make_printable_zval
-                    v_copy = emalloc(sizeof(char*) * (strlen(Z_OBJCE_P(expr)->name) + 2));
+                    v_copy = malloc(sizeof(char*) * (strlen(Z_OBJCE_P(expr)->name) + 2));
                     sprintf(v_copy, "(%s)", Z_OBJCE_P(expr)->name);
                     v = strdup(v_copy);
-                    efree(v_copy);
+                    free(v_copy);
                 } else {
                     // Uses zend_make_printable_zval
                     zend_make_printable_zval(expr, &expr_copy, &use_copy);
