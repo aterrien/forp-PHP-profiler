@@ -182,11 +182,11 @@ ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp) {
         int i;
         for (i = 0; i < FORP_G(stack_len); ++i) {
             if(FORP_G(stack)[i]->function.groups) {
-                efree(FORP_G(stack)[i]->function.groups);
+                free(FORP_G(stack)[i]->function.groups);
             }
-            efree(FORP_G(stack)[i]);
+            free(FORP_G(stack)[i]);
         }
-        if (i) efree(FORP_G(stack));
+        if (i) free(FORP_G(stack));
     }
     FORP_G(stack_len) = 0;
     FORP_G(stack) = NULL;

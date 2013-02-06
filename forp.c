@@ -325,9 +325,10 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
     start_time = tv.tv_sec * 1000000.0 + tv.tv_usec;
 
     // Inits node
-    n = emalloc(sizeof (forp_node_t));
+    n = malloc(sizeof (forp_node_t));
 
     n->level = FORP_G(nesting_level)++;
+    n->state = 1; // opened
     n->parent = FORP_G(current_node);
 
     n->time_begin = 0;
@@ -358,8 +359,8 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
         n->caption = forp_annotation_string(op_array->doc_comment, "ProfileCaption" TSRMLS_CC);
 
         // Group
-        // TODO no alloc / erealloc when group found
-        n->function.groups = emalloc(sizeof(char*) * 10);
+        // TODO no alloc / realloc when group found
+        n->function.groups = malloc(sizeof(char*) * 10);
         n->function.groups_len = 0;
         forp_annotation_array(op_array->doc_comment, "ProfileGroup", &(n->function.groups), &(n->function.groups_len) TSRMLS_CC);
 
@@ -429,6 +430,7 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
     } else {
         // Root node
         edata = EG(current_execute_data);
+        //n->parent = NULL;
         n->function.class = NULL;
         n->function.function = "{main}";
         n->function.filename = edata->op_array->filename;
@@ -439,10 +441,10 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
     key = FORP_G(stack_len);
     n->key = key;
     FORP_G(stack_len)++;
-    FORP_G(stack) = erealloc(
-            FORP_G(stack),
-            FORP_G(stack_len) * sizeof (forp_node_t)
-            );
+    FORP_G(stack) = realloc(
+        FORP_G(stack),
+        FORP_G(stack_len) * sizeof (forp_node_t)
+    );
     FORP_G(stack)[key] = n;
 
     if(FORP_G(flags) & FORP_FLAG_MEMORY) {
@@ -462,7 +464,11 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
 /* {{{ forp_close_node
  */
 void forp_close_node(forp_node_t *n TSRMLS_DC) {
+
     struct timeval tv;
+
+    // closed state
+    n->state = 2;
 
     // dump duration and memory before next steps
     if(FORP_G(flags) & FORP_FLAG_TIME) {
@@ -545,8 +551,13 @@ void forp_end(TSRMLS_D) {
         }
 #endif
 
+        // Close ancestors
+        while(FORP_G(current_node)) {
+            forp_close_node(FORP_G(current_node) TSRMLS_CC);
+        }
+
         // Close main
-        forp_close_node(FORP_G(main) TSRMLS_CC);
+        //forp_close_node(FORP_G(main) TSRMLS_CC);
 
         // Restores zend api methods
         if (old_execute) {
@@ -589,7 +600,7 @@ void forp_execute(zend_op_array *op_array TSRMLS_DC) {
     } else {
         n = forp_open_node(EG(current_execute_data), op_array TSRMLS_CC);
         old_execute(op_array TSRMLS_CC);
-        forp_close_node(n TSRMLS_CC);
+        if(n->state < 2) forp_close_node(n TSRMLS_CC);
     }
 }
 /* }}} */
@@ -609,7 +620,7 @@ void forp_execute_internal(zend_execute_data *current_execute_data, int ret TSRM
         } else {
             execute_internal(current_execute_data, ret TSRMLS_CC);
         }
-        forp_close_node(n TSRMLS_CC);
+        if(n->state < 2) forp_close_node(n TSRMLS_CC);
     }
 }
 /* }}} */

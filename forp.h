@@ -47,6 +47,7 @@ typedef struct forp_node_t {
     int key;
     //int type;
     int level;
+    int state;
     struct forp_node_t *parent;
     char *caption;
     char *alias; // node alias
