@@ -261,7 +261,7 @@ make && make install
 ```
 
 * php.ini
-```ini
+```sh
 extension=forp.so
 ```
 
