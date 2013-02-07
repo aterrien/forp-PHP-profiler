@@ -257,15 +257,15 @@ cd forp
 ```sh
 phpize
 ./configure
-make
-make test
-make install
+make && make install
 ```
 
 * php.ini
 ```ini
 extension=forp.so
 ```
+
+... you can restart your web server.
 
 ## Tested OS and platforms ##
 
