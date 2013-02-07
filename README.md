@@ -231,6 +231,12 @@ function render($datas) {
 
 ## Linux Install ##
 
+* requirement (php5-dev)
+
+```sh
+apt-get install php5-dev
+```
+
 * download
 
 current release
@@ -247,6 +253,7 @@ cd forp
 ```
 
 * install
+
 ```sh
 phpize
 ./configure
