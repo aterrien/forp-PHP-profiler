@@ -243,7 +243,7 @@ current release
 ```sh
 wget https://github.com/aterrien/forp/archive/1.0.1.tar.gz
 tar -xvzf 1.0.1.tar.gz
-cd 1.0.0
+cd 1.0.1
 ```
 
 or master (unstable)
@@ -266,7 +266,7 @@ make && make install
 extension=forp.so
 ```
 
-... you can restart your web server.
+... you can restart your PHP server.
 
 ## Tested OS and platforms ##
 
