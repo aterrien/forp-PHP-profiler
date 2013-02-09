@@ -241,8 +241,8 @@ apt-get install php5-dev
 
 current release
 ```sh
-wget https://github.com/aterrien/forp/archive/1.0.0.tar.gz
-tar -xvzf 1.0.0.tar.gz
+wget https://github.com/aterrien/forp/archive/1.0.1.tar.gz
+tar -xvzf 1.0.1.tar.gz
 cd 1.0.0
 ```
 
@@ -262,7 +262,7 @@ make && make install
 
 * php.ini
 
-```
+```sh
 extension=forp.so
 ```
 

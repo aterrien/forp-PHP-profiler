@@ -39,6 +39,7 @@ const zend_function_entry forp_functions[] = {
     PHP_FE(forp_print, NULL)
     PHP_FE(forp_info, NULL)
     PHP_FE(forp_enable, NULL)
+    PHP_FE(forp_inspect, NULL)
     {NULL,NULL,NULL} /*PHP_FE_END*/
 };
 /* }}} */
@@ -96,6 +97,8 @@ static void php_forp_init_globals(zend_forp_globals *forp_globals)
     forp_globals->current_node = NULL;
     forp_globals->utime = 0;
     forp_globals->stime = 0;
+    forp_globals->inspect = NULL;
+    forp_globals->inspect_size = 0;
 }
 /* }}} */
 
@@ -138,12 +141,6 @@ PHP_MINIT_FUNCTION(forp) {
     return SUCCESS;
 }
 /* }}} */
-
-/* {{{ PHP_RINIT_FUNCTION
- */
-/*PHP_RINIT_FUNCTION(forp) {
-    return SUCCESS;
-}*/
 
 /* {{{ PHP_RSHUTDOWN_FUNCTION
  */
@@ -251,5 +248,18 @@ ZEND_FUNCTION(forp_print) {
         forp_end(TSRMLS_C);
     }
     forp_stack_dump_cli(TSRMLS_C);
+}
+/* }}} */
+
+/* {{{ forp_inspect
+ */
+ZEND_FUNCTION(forp_inspect) {
+    zval *expr = NULL;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &expr) == FAILURE) {
+        efree(expr);
+        return;
+    }
+    forp_inspect(expr TSRMLS_CC);
+    RETURN_TRUE;
 }
 /* }}} */

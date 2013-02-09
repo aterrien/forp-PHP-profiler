@@ -245,28 +245,9 @@ static void forp_populate_function(
     // Inits function struct
     function->class = NULL;
     function->function = NULL;
+    function->_filename = NULL;
     function->filename = NULL;
     function->lineno = 0;
-
-    if (op_array) {
-        // Retrieves filename
-        function->filename = strdup(op_array->filename);
-    } else {
-        if (edata->op_array) {
-            function->filename = strdup(edata->op_array->filename);
-        } else {
-            function->filename = "";
-        }
-    }
-
-    // Retrieves call lineno
-    if(edata->opline) {
-        function->lineno = edata->opline->lineno;
-    }
-    // func proto lineno
-    // if (edata->function_state.function->common.type!=ZEND_INTERNAL_FUNCTION) {
-    //    function->lineno = edata->function_state.function->op_array.opcodes->lineno - 1;
-    // }
 
     // Retrieves class and function names
     if (edata->function_state.function->common.function_name) {
@@ -308,6 +289,25 @@ static void forp_populate_function(
                 function->function = "unknown";
                 break;
         }
+    }
+
+    // Retrieves filename
+    if (op_array) {
+        function->_filename = strdup(op_array->filename);
+    } else {
+        if (edata->op_array) {
+            function->_filename = strdup(edata->op_array->filename);
+        } else {
+            function->_filename = "";
+        }
+    }
+    if(FORP_G(current_node)) {
+        function->filename = strdup(FORP_G(current_node)->function._filename);
+    }
+
+    // Retrieves call lineno
+    if(edata->opline) {
+        function->lineno = edata->opline->lineno;
     }
 }
 /* }}} */
@@ -433,7 +433,8 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
         //n->parent = NULL;
         n->function.class = NULL;
         n->function.function = "{main}";
-        n->function.filename = edata->op_array->filename;
+        n->function._filename = edata->op_array->filename;
+        n->function.filename = strdup(n->function._filename);
         n->function.lineno = 0;
     }
 
@@ -762,3 +763,8 @@ void forp_stack_dump_cli(TSRMLS_D) {
     php_printf("-----------------------------------------------------------------------------------------------------------%s", PHP_EOL);
 }
 /* }}} */
+
+
+void forp_inspect(zval *expr TSRMLS_DC) {
+    php_printf('Not implemented yet !');
+}

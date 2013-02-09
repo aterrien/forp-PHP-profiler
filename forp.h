@@ -28,6 +28,7 @@
 #define FORP_HIGHLIGHT_END    	"<div style='position: absolute; top: 0px; right: 0px; background: #222; color: #fff; padding: 0px 5px 3px 5px; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; font-size: 10px; font-weight: 300;'>%.03f ms, %d b, level %d</div></div>"
 
 typedef struct forp_function_t {
+    char *_filename;
     char *filename;
     char *class;
     char *function;
@@ -38,22 +39,15 @@ typedef struct forp_function_t {
     char *highlight;
 } forp_function_t;
 
-
-//typedef struct forp_group_t {
-//    char *name;
-//} forp_group_t;
-
 typedef struct forp_node_t {
     int key;
-    //int type;
     int level;
     int state;
     struct forp_node_t *parent;
     char *caption;
-    char *alias; // node alias
+    char *alias;
 
     // Type node specific
-    //forp_group_t group;
     forp_function_t function;
 
     // Memory
@@ -120,6 +114,8 @@ void forp_stack_dump(TSRMLS_D);
 void forp_stack_dump_cli_node(forp_node_t *node TSRMLS_DC);
 
 void forp_stack_dump_cli(TSRMLS_D);
+
+void forp_explain(zval *expr TSRMLS_DC);
 
 #endif  /* FORP_H */
 

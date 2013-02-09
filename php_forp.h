@@ -63,6 +63,7 @@ PHP_FUNCTION(forp_end);
 PHP_FUNCTION(forp_dump);
 PHP_FUNCTION(forp_print);
 PHP_FUNCTION(forp_info);
+PHP_FUNCTION(forp_inspect);
 
 /* global variables */
 ZEND_BEGIN_MODULE_GLOBALS(forp)
@@ -78,6 +79,8 @@ ZEND_BEGIN_MODULE_GLOBALS(forp)
 	int no_internals;
     double stime;
     double utime;
+    zval *inspect;
+    int inspect_size;
 ZEND_END_MODULE_GLOBALS(forp)
 
 ZEND_DECLARE_MODULE_GLOBALS(forp);
