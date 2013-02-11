@@ -744,7 +744,7 @@ void forp_stack_dump_cli_node(forp_node_t *node TSRMLS_DC) {
         php_printf("[memory:%09d] ", node->mem);
     }
     for (j = 0; j < node->level; ++j) {
-        if (j == node->level - 1) php_printf(" └── ");
+        if (j == node->level - 1) php_printf(" |--- ");
         else php_printf(" |   ");
     }
     if (node->function.class) php_printf("%s::", node->function.class);
@@ -756,11 +756,11 @@ void forp_stack_dump_cli_node(forp_node_t *node TSRMLS_DC) {
  */
 void forp_stack_dump_cli(TSRMLS_D) {
     int i;
-    php_printf("-----------------------------------------------------------------------------------------------------------%s", PHP_EOL);
+    php_printf("--------------------------------------------------------------------------------%s", PHP_EOL);
     for (i = 0; i < FORP_G(stack_len); ++i) {
         forp_stack_dump_cli_node(FORP_G(stack)[i] TSRMLS_CC);
     }
-    php_printf("-----------------------------------------------------------------------------------------------------------%s", PHP_EOL);
+    php_printf("--------------------------------------------------------------------------------%s", PHP_EOL);
 }
 /* }}} */
 
