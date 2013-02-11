@@ -149,6 +149,10 @@ Array
 )
 ```
 
+# php.ini options #
+
+- forp.max_nesting_level : default 50
+- forp.no_internals : default 0
 
 # forp PHP API #
 
@@ -164,10 +168,31 @@ Array
 - FORP_FLAG_ANNOTATIONS : activate annotations handler
 - FORP_FLAG_CPU : retrieve the cpu usage
 
-## php.ini options ##
+## forp_dump() ##
 
-- forp.max_nesting_level : default 50
-- forp.no_internals : default 0
+forp_dump() provides an array composed of :
+
+- global fields : utime, stime ...
+- stack : a flat PHP array of stack entries.
+
+Global fields :
+
+- utime : CPU used for user function calls
+- stime : CPU used for system calls
+
+Fields of a stack entry :
+
+- file : file of the call
+- lineno : line number of the call
+- class : Class name
+- function : function name
+- groups : list of associated groups
+- caption : caption of the function
+- usec : function time (without the profiling overhead)
+- pusec : inner profiling time (without executing the function)
+- bytes : memory usage of the function
+- level : depth level from the forp_start call
+- parent : parent index (numeric)
 
 ## Available annotations ##
 
