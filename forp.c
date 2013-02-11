@@ -766,5 +766,5 @@ void forp_stack_dump_cli(TSRMLS_D) {
 
 
 void forp_inspect(zval *expr TSRMLS_DC) {
-    php_printf('Not implemented yet !');
+    php_printf("Not implemented yet !");
 }
