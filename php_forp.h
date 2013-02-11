@@ -18,18 +18,7 @@
 #ifndef PHP_FORP_H
 #define PHP_FORP_H
 
-#define FORP_VERSION                        "0.0.1"
-#define FORP_DUMP_ASSOC_FILE                "file"
-#define FORP_DUMP_ASSOC_CLASS               "class"
-#define FORP_DUMP_ASSOC_FUNCTION            "function"
-#define FORP_DUMP_ASSOC_LINENO              "lineno"
-#define FORP_DUMP_ASSOC_DURATION            "usec"
-#define FORP_DUMP_ASSOC_PROFILERTIME        "pusec"
-#define FORP_DUMP_ASSOC_MEMORY              "bytes"
-#define FORP_DUMP_ASSOC_LEVEL               "level"
-#define FORP_DUMP_ASSOC_PARENT              "parent"
-#define FORP_DUMP_ASSOC_GROUPS              "groups"
-#define FORP_DUMP_ASSOC_CAPTION             "caption"
+#define FORP_VERSION                        "1.0.2"
 #define FORP_FLAG_TIME                      0x0001
 #define FORP_FLAG_MEMORY                    0x0002
 #define FORP_FLAG_ANNOTATIONS               0x0004

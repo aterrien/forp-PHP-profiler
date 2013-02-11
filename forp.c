@@ -22,8 +22,12 @@
 
 #include "php.h"
 #include "php_ini.h"
+
 #include "forp.h"
 #include "php_forp.h"
+
+#include "forp_string.h"
+#include "forp_annotation.h"
 
 #if HAVE_SYS_TIME_H
 #include <sys/time.h>
@@ -39,7 +43,7 @@ static inline double round(double val) {
 #include <sys/resource.h>
 #endif
 
-#ifndef POSIX
+#if defined(PHP_WIN32)
 char* forp_strndup(const char* s, size_t n) {
     size_t slen = (size_t)strlen(s);
     char* copy;
@@ -55,184 +59,6 @@ char* forp_strndup(const char* s, size_t n) {
 }
 #define strndup(s,n) forp_strndup(s, n)
 #endif
-
-/* {{{ forp_annotation_args
- *
- * Parses args of an annotation
- *
- * @param char* str
- * @param char*** args
- * @param int* args_count
- * @return void
- */
-void forp_annotation_args(char *str, char ***args, int *args_count TSRMLS_DC) {
-    int esc = 0, buf = 0, i = 0, j = 0;
-    char *ex;
-
-    *args_count = 0;
-    if(strlen(str) > 0) {
-        ex = malloc(sizeof(char*));
-        while(str[i] != '\0') {
-            if(!esc) {
-                if(str[i] == '\\') {
-                    esc = 1;
-                }
-                if((!esc) && str[i] == '"') {
-                    if(buf && j > 0) {
-                        ex = realloc(ex, sizeof(char*) * (j + 1));
-                        ex[j] = '\0';
-                        (*args)[(*args_count)] = strdup(ex);
-                        (*args_count)++;
-                        memset(ex, 0, sizeof(char*));
-                        j = 0;
-                    }
-                    buf = !buf;
-                } else {
-                    if(buf) {
-                        ex = realloc(ex, sizeof(char*) * (j + 1));
-                        ex[j] = str[i];
-                        j++;
-                    }
-                }
-            } else {
-                if(buf) {
-                    ex = realloc(ex, sizeof(char*) * (j + 1));
-                    ex[j] = str[i];
-                    j++;
-                }
-                esc = 0;
-            }
-            i++;
-        }
-
-        //if(buf) {
-            //ex[j] = '\0';
-            //printf("NOT CLOSED \"!:|%s|\n", ex);
-        //}
-
-        free(ex);
-    }
-}
-/* }}} */
-
-/* {{{ forp_annotation_tok
- *
- * Handles annotations in doc_comment : @<tag>(<params>)<\n>
- *
- * @param char* doc_comment
- * @param char* tag
- * @return char*
- */
-char *forp_annotation_tok(const char *doc_comment, char *tag TSRMLS_DC) {
-    char *v = NULL, *v_search = NULL, *t_start = NULL, *tmp = NULL, *eot = NULL;
-    unsigned int v_start, v_end;
-
-    v_search = malloc(sizeof(char*) * (strlen(tag) + 3));
-    if(v_search) {
-        sprintf(v_search, "@%s(", tag);
-        t_start = strstr(doc_comment, v_search);
-        if (t_start) {
-            v_start = t_start - doc_comment + strlen(v_search);
-            tmp = strndup(doc_comment + v_start, strlen(doc_comment));
-            eot = strstr(tmp, ")");
-            v_end = eot - tmp;
-            v = strndup(doc_comment + v_start, v_end);
-        }
-        free(v_search);
-    }
-
-    return v;
-}
-/* }}} */
-
-/* {{{ forp_annotation_string
- *
- * Retrieves string arg in an annotation
- *
- * @param char* doc_comment
- * @param char* tag
- * @return char*
- */
-char *forp_annotation_string(const char *doc_comment, char *tag TSRMLS_DC) {
-    int args_count;
-    char *v = NULL;
-    char **args = malloc(sizeof(char*));
-    char *args_str = forp_annotation_tok(doc_comment, tag TSRMLS_CC);
-
-    if(args_str != NULL) {
-        forp_annotation_args(args_str, &args, &args_count TSRMLS_CC);
-        if(args_count > 0) {
-            v = strdup(args[0]);
-        }
-    }
-    free(args);
-
-    return v;
-}
-/* }}} */
-
-/* {{{ forp_annotation_array
- *
- * Retrieves args array in an annotation
- *
- * @param char* doc_comment
- * @param char* tag
- * @param char*** args
- * @param int* args_count
- * @return void
- */
-void forp_annotation_array(const char *doc_comment, char *tag, char ***args, int *args_count TSRMLS_DC) {
-    char *args_str = forp_annotation_tok(doc_comment, tag TSRMLS_CC);
-    if(args_str != NULL) {
-        forp_annotation_args(args_str, args, args_count TSRMLS_CC);
-    }
-}
-/* }}} */
-
-/* {{{ forp_substr_replace
- *
- * @param char* subject
- * @param uint start
- * @param uint len
- * @param char* replace
- * @return char*
- */
-char *forp_substr_replace(char *subject, char *replace, unsigned int start, unsigned int len) {
-   char *ns = NULL;
-   size_t size;
-   if (
-        subject != NULL && replace != NULL
-        && start >= 0 && len > 0
-   ) {
-      size = strlen(subject);
-      ns = malloc(sizeof(*ns) * (size - len + strlen(replace) + 1));
-      if(ns) {
-         memcpy(ns, subject, start);
-         memcpy(&ns[start], replace, strlen(replace));
-         memcpy(&ns[start + strlen(replace)], &subject[start + len], size - len - start + 1);
-      }
-      subject = strdup(ns);
-      free(ns);
-   }
-   return subject;
-}
-/* }}} */
-
-/* {{{ forp_str_replace
- *
- * @param char* search
- * @param char* replace
- * @param char* subject
- * @return char*
- */
-char *forp_str_replace(char *search, char *replace, char *subject TSRMLS_DC) {
-    char *found;
-    while(found = strstr(subject, search)) {
-        subject = forp_substr_replace(subject, replace, found - subject, strlen(search));
-    }
-    return subject;
-}
-/* }}} */
 
 /* {{{ forp_populate_function
  */
@@ -764,7 +590,9 @@ void forp_stack_dump_cli(TSRMLS_D) {
 }
 /* }}} */
 
-
+/* {{{ forp_inspect
+ */
 void forp_inspect(zval *expr TSRMLS_DC) {
     php_printf("Not implemented yet !");
 }
+/* }}} */
