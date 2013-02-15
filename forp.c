@@ -71,9 +71,7 @@ static void forp_populate_function(
     // Inits function struct
     function->class = NULL;
     function->function = NULL;
-    function->_filename = NULL;
     function->filename = NULL;
-    function->lineno = 0;
 
     // Retrieves class and function names
     if (edata->function_state.function->common.function_name) {
@@ -117,23 +115,15 @@ static void forp_populate_function(
         }
     }
 
-    // Retrieves filename
+    // Stores filename
     if (op_array) {
-        function->_filename = strdup(op_array->filename);
+        function->filename = strdup(op_array->filename);
     } else {
         if (edata->op_array) {
-            function->_filename = strdup(edata->op_array->filename);
+            function->filename = strdup(edata->op_array->filename);
         } else {
-            function->_filename = "";
+            function->filename = "";
         }
-    }
-    if(FORP_G(current_node)) {
-        function->filename = strdup(FORP_G(current_node)->function._filename);
-    }
-
-    // Retrieves call lineno
-    if(edata->opline) {
-        function->lineno = edata->opline->lineno;
     }
 }
 /* }}} */
@@ -167,6 +157,10 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
     n->mem_end = 0;
     n->mem = 0;
 
+    // Call file and line number
+    n->filename = NULL;
+    n->lineno = NULL;
+
     // Annotations
     n->alias = NULL;
     n->caption = NULL;
@@ -175,8 +169,6 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
 
     // Handles fn annotations to know what to do
     if((FORP_G(flags) & FORP_FLAG_ANNOTATIONS) && op_array && op_array->doc_comment) {
-
-        // TODO Optimize it !
 
         // Alias : allows to give a name to anonymous functions
         n->alias = forp_annotation_string(op_array->doc_comment, "ProfileAlias" TSRMLS_CC);
@@ -198,9 +190,18 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
         n->function.highlight = NULL;
     }
 
-    // Node of type function
     if(edata) {
         forp_populate_function(&(n->function), edata, op_array TSRMLS_CC);
+
+        // Retrieves filename
+        if(FORP_G(current_node)) {
+            n->filename = strdup(FORP_G(current_node)->function.filename);
+        }
+
+        // Retrieves call lineno
+        if(edata->opline) {
+            n->lineno = edata->opline->lineno;
+        }
 
         // Collects params
         if(n->caption) {
@@ -259,19 +260,23 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
         //n->parent = NULL;
         n->function.class = NULL;
         n->function.function = "{main}";
-        n->function._filename = edata->op_array->filename;
-        n->function.filename = strdup(n->function._filename);
-        n->function.lineno = 0;
+        n->function.filename = strdup(edata->op_array->filename);
+        n->filename = strdup(edata->op_array->filename);
     }
 
     FORP_G(current_node) = n;
     key = FORP_G(stack_len);
     n->key = key;
+
+    // realloc stack * FORP_STACK_REALLOC
+    if(FORP_G(stack_len)%FORP_STACK_REALLOC == 0) {
+        FORP_G(stack) = realloc(
+            FORP_G(stack),
+            ((FORP_G(stack_len)/FORP_STACK_REALLOC)+1) * FORP_STACK_REALLOC * sizeof (forp_node_t)
+        );
+    }
+
     FORP_G(stack_len)++;
-    FORP_G(stack) = realloc(
-        FORP_G(stack),
-        FORP_G(stack_len) * sizeof (forp_node_t)
-    );
     FORP_G(stack)[key] = n;
 
     if(FORP_G(flags) & FORP_FLAG_MEMORY) {
@@ -496,8 +501,8 @@ void forp_stack_dump(TSRMLS_D) {
         MAKE_STD_ZVAL(entry);
         array_init(entry);
 
-        if (n->function.filename)
-            add_assoc_string(entry, FORP_DUMP_ASSOC_FILE, n->function.filename, 1);
+        if (n->filename)
+            add_assoc_string(entry, FORP_DUMP_ASSOC_FILE, n->filename, 1);
 
         if (n->function.class)
             add_assoc_string(entry, FORP_DUMP_ASSOC_CLASS, n->function.class, 1);
@@ -508,8 +513,8 @@ void forp_stack_dump(TSRMLS_D) {
             add_assoc_string(entry, FORP_DUMP_ASSOC_FUNCTION, n->function.function, 1);
         }
 
-        if (n->function.lineno)
-            add_assoc_long(entry, FORP_DUMP_ASSOC_LINENO, n->function.lineno);
+        if (n->lineno)
+            add_assoc_long(entry, FORP_DUMP_ASSOC_LINENO, n->lineno);
 
         if (n->function.groups && n->function.groups_len > 0) {
             zval *groups;
@@ -560,21 +565,27 @@ void forp_stack_dump(TSRMLS_D) {
 
 /* {{{ forp_stack_dump_cli_node
  */
-void forp_stack_dump_cli_node(forp_node_t *node TSRMLS_DC) {
+void forp_stack_dump_cli_node(forp_node_t *n TSRMLS_DC) {
     int j;
 
     if(FORP_G(flags) & FORP_FLAG_TIME) {
-        php_printf("[time:%09.0f] ", node->time);
+        php_printf("[time:\x1B[35m%09.0f\x1B[0m] ", n->time);
     }
     if(FORP_G(flags) & FORP_FLAG_MEMORY) {
-        php_printf("[memory:%09d] ", node->mem);
+        php_printf("[mem:\x1B[35m%09d\x1B[0m] ", n->mem);
     }
-    for (j = 0; j < node->level; ++j) {
-        if (j == node->level - 1) php_printf(" |--- ");
-        else php_printf(" |   ");
+    for (j = 0; j < n->level; ++j) {
+        if (j == n->level - 1) php_printf("\x1B[33m |--- \x1B[0m");
+        else php_printf("\x1B[33m |   \x1B[0m");
     }
-    if (node->function.class) php_printf("%s::", node->function.class);
-    php_printf("%s (%s)%s", node->function.function, node->function.filename, PHP_EOL);
+    if (n->function.class) php_printf("\x1B[34m\x1B[1m%s\x1B[0m::", n->function.class);
+    php_printf("\x1B[34m%s\x1B[0m", n->function.function);
+    if(n->filename) {
+        php_printf(" (%s", n->filename);
+        if(n->lineno) php_printf(":%d", n->lineno);
+        php_printf(")");
+    }
+    php_printf("%s%s","\x1B[0m", PHP_EOL);
 }
 /* }}} */
 

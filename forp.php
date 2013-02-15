@@ -13,17 +13,21 @@ echo $br;
 
 // testing forp functions
 echo '- Enable'.$br;
-forp_enable();
+forp_start();
 
+/**
+ * @ProfileGroup("fibo")
+ * @ProfileCaption("fibo of #1")
+ */
 function fibo( $x ) {
-    if ( $x < 2) {
-        return 1;
+    if ( $x <= 1) {
+        return $x;
     } else {
         return fibo($x - 1) + fibo($x - 2);
     }
 }
 
-for( $i = 1; $i < 10; $i++) {
+for( $i = 1; $i < 20; $i++) {
     printf(
         'fibo(%1$s) = %2$s'.$br,
         $i, fibo($i)
@@ -31,6 +35,6 @@ for( $i = 1; $i < 10; $i++) {
 }
 echo '- Dump'.$br;
 $dump = forp_dump();
-print_r( $dump );
+print_r( $dump['stack'][0] );
 echo '- Print'.$br;
 forp_print();

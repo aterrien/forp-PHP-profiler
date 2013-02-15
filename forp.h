@@ -39,13 +39,14 @@
 #define FORP_DUMP_ASSOC_CAPTION         "caption"
 #define FORP_HIGHLIGHT_BEGIN            "<div style='position: relative; border: 1px solid #222; margin: 1px'>"
 #define FORP_HIGHLIGHT_END              "<div style='position: absolute; top: 0px; right: 0px; background: #222; color: #fff; padding: 0px 5px 3px 5px; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; font-size: 10px; font-weight: 300;'>%.03f ms, %d b, level %d</div></div>"
+#define FORP_STACK_REALLOC              1000
 
 typedef struct forp_function_t {
-    char *_filename;
+    //char *_filename;
     char *filename;
     char *class;
     char *function;
-    int lineno;
+    //int lineno;
     int type;
     char **groups;
     int groups_len;
@@ -54,13 +55,15 @@ typedef struct forp_function_t {
 
 typedef struct forp_node_t {
     int key;
-    int level;
     int state;
+
+    char *filename;
+    int lineno;
+    int level;
     struct forp_node_t *parent;
     char *caption;
     char *alias;
 
-    // Type node specific
     forp_function_t function;
 
     // Memory

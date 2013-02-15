@@ -68,6 +68,7 @@ ZEND_BEGIN_MODULE_GLOBALS(forp)
 	int no_internals;
     double stime;
     double utime;
+    //struct hashtable_t *functions;
     zval *inspect;
     int inspect_size;
 ZEND_END_MODULE_GLOBALS(forp)

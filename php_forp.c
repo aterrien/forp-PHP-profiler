@@ -221,6 +221,7 @@ ZEND_FUNCTION(forp_start) {
         return;
     }
     if(opt >= 0) FORP_G(flags) = opt;
+
     forp_start(TSRMLS_C);
 }
 
@@ -254,12 +255,11 @@ ZEND_FUNCTION(forp_print) {
 /* {{{ forp_inspect
  */
 ZEND_FUNCTION(forp_inspect) {
-    zval *expr = NULL;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &expr) == FAILURE) {
-        efree(expr);
+    zval *mixed = NULL;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &mixed) == FAILURE) {
         return;
     }
-    forp_inspect(expr TSRMLS_CC);
+    //forp_inspect(expr TSRMLS_CC);
     RETURN_TRUE;
 }
 /* }}} */
