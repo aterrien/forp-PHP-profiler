@@ -119,6 +119,8 @@ void forp_stack_dump_cli_node(forp_node_t *node TSRMLS_DC);
 
 void forp_stack_dump_cli(TSRMLS_D);
 
+int forp_not_printable(forp_node_t *n TSRMLS_DC);
+
 void forp_inspect(zval *expr TSRMLS_DC);
 
 #endif  /* FORP_H */

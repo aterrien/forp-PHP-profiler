@@ -159,7 +159,7 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
 
     // Call file and line number
     n->filename = NULL;
-    n->lineno = NULL;
+    n->lineno = 0;
 
     // Annotations
     n->alias = NULL;
@@ -463,6 +463,7 @@ void forp_stack_dump(TSRMLS_D) {
     int i;
     int j = 0;
     zval *entry, *stack;
+    forp_node_t *n;
 
     /**
      * array(
@@ -485,17 +486,9 @@ void forp_stack_dump(TSRMLS_D) {
     add_assoc_zval(FORP_G(dump), "stack", stack);
 
     for (i = 0; i < FORP_G(stack_len); ++i) {
-        forp_node_t *n;
-
         n = FORP_G(stack)[i];
 
-        if (
-            strstr(n->function.function,"forp_dump")
-            || strstr(n->function.function,"forp_end")
-            || strstr(n->function.function,"forp_start")
-        ) {
-            continue;
-        }
+        if(forp_not_printable(n TSRMLS_CC)) continue;
 
         // stack entry
         MAKE_STD_ZVAL(entry);
@@ -595,9 +588,21 @@ void forp_stack_dump_cli(TSRMLS_D) {
     int i;
     php_printf("--------------------------------------------------------------------------------%s", PHP_EOL);
     for (i = 0; i < FORP_G(stack_len); ++i) {
+        if(forp_not_printable(FORP_G(stack)[i] TSRMLS_CC)) continue;
         forp_stack_dump_cli_node(FORP_G(stack)[i] TSRMLS_CC);
     }
     php_printf("--------------------------------------------------------------------------------%s", PHP_EOL);
+}
+/* }}} */
+
+/* {{{ forp_not_printable
+ */
+int forp_not_printable(forp_node_t *n TSRMLS_DC) {
+    return (
+        strstr(n->function.function, "forp_dump")
+        || strstr(n->function.function, "forp_end")
+        || strstr(n->function.function, "forp_start")
+    );
 }
 /* }}} */
 
