@@ -194,6 +194,61 @@ Fields of a stack entry :
 - level : depth level from the forp_start call
 - parent : parent index (numeric)
 
+## forp_inspect() ##
+
+forp_inspect('symbol_name') will output a detailed representation of a variable in the forp_dump() result.
+
+Usage :
+```php
+$var = array(0 => "my", "strkey" => "inspected", 3 => "array");
+forp_inspect('var');
+print_r(forp_dump());
+```
+
+Result :
+```php
+Array
+(
+    ...
+
+    [inspect] => Array
+        (
+            [0] => Array
+                (
+                    [name] => var
+                    [type] => array
+                    [size] => 3
+                    [value] => Array
+                        (
+                            [0] => Array
+                                (
+                                    [prop] => 0
+                                    [type] => string
+                                    [value] => my
+                                )
+
+                            [1] => Array
+                                (
+                                    [prop] => strkey
+                                    [type] => string
+                                    [value] => inspected
+                                )
+
+                            [2] => Array
+                                (
+                                    [prop] => 3
+                                    [type] => string
+                                    [value] => array
+                                )
+
+                        )
+
+                )
+
+        )
+)
+```
+
 ## Available annotations ##
 
 - @ProfileGroup

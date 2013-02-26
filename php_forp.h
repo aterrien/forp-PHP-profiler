@@ -18,7 +18,7 @@
 #ifndef PHP_FORP_H
 #define PHP_FORP_H
 
-#define FORP_VERSION                        "1.0.2"
+#define FORP_VERSION                        "1.1.0"
 #define FORP_FLAG_TIME                      0x0001
 #define FORP_FLAG_MEMORY                    0x0002
 #define FORP_FLAG_ANNOTATIONS               0x0004
@@ -69,8 +69,8 @@ ZEND_BEGIN_MODULE_GLOBALS(forp)
     double stime;
     double utime;
     //struct hashtable_t *functions;
-    zval *inspect;
-    int inspect_size;
+    int inspect_len;
+    forp_var_t **inspect;
 ZEND_END_MODULE_GLOBALS(forp)
 
 ZEND_DECLARE_MODULE_GLOBALS(forp);

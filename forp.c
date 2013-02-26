@@ -457,13 +457,57 @@ void forp_execute_internal(zend_execute_data *current_execute_data, int ret TSRM
 }
 /* }}} */
 
+/* {{{ forp_stack_dump_var
+ */
+zval *forp_stack_dump_var(forp_var_t *var TSRMLS_DC) {
+
+    int i;
+    zval *zvar, *zarr;
+
+    MAKE_STD_ZVAL(zvar);
+    array_init(zvar);
+
+    if(var->name) add_assoc_string(zvar, "name", var->name, 1);
+    if(var->prop) add_assoc_string(zvar, "prop", var->prop, 1);
+    if(var->type) add_assoc_string(zvar, "type", var->type, 1);
+    if(var->class) add_assoc_string(zvar, "class", var->class, 1);
+    if(var->arr_len) {
+        add_assoc_long(zvar, "size", var->arr_len);
+
+        MAKE_STD_ZVAL(zarr);
+        array_init(zarr);
+        i = 0;
+        while(i < var->arr_len) {
+            //add_next_index_string(zarr, forp_stack_dump_var(var->arr[i] TSRMLS_CC), 1);
+            zval *entry;
+            entry  = forp_stack_dump_var(var->arr[i] TSRMLS_CC);
+            if (
+                zend_hash_next_index_insert(Z_ARRVAL_P(zarr), (void *) &entry,
+                sizeof (zval *), NULL) == FAILURE
+            ) {
+                continue;
+            }
+
+            i++;
+        }
+        add_assoc_zval(zvar, "value", zarr);
+    } else {
+        if(var->value) add_assoc_string(zvar, "value", var->value, 1);
+    }
+
+    return zvar;
+}
+/* }}} */
+
 /* {{{ forp_stack_dump
  */
 void forp_stack_dump(TSRMLS_D) {
     int i;
     int j = 0;
-    zval *entry, *stack;
+    zval *entry, *stack, *groups, *time, *profiler_duration,
+         *var, *inspect;
     forp_node_t *n;
+    forp_var_t *v;
 
     /**
      * array(
@@ -481,76 +525,96 @@ void forp_stack_dump(TSRMLS_D) {
         add_assoc_double(FORP_G(dump), "stime", FORP_G(stime));
     }
 
-    MAKE_STD_ZVAL(stack);
-    array_init(stack);
-    add_assoc_zval(FORP_G(dump), "stack", stack);
 
-    for (i = 0; i < FORP_G(stack_len); ++i) {
-        n = FORP_G(stack)[i];
+    if(FORP_G(stack_len)) {
 
-        if(forp_not_printable(n TSRMLS_CC)) continue;
+        MAKE_STD_ZVAL(stack);
+        array_init(stack);
+        add_assoc_zval(FORP_G(dump), "stack", stack);
 
-        // stack entry
-        MAKE_STD_ZVAL(entry);
-        array_init(entry);
+        for (i = 0; i < FORP_G(stack_len); ++i) {
+            n = FORP_G(stack)[i];
 
-        if (n->filename)
-            add_assoc_string(entry, FORP_DUMP_ASSOC_FILE, n->filename, 1);
+            if(forp_not_printable(n TSRMLS_CC)) continue;
 
-        if (n->function.class)
-            add_assoc_string(entry, FORP_DUMP_ASSOC_CLASS, n->function.class, 1);
+            // stack entry
+            MAKE_STD_ZVAL(entry);
+            array_init(entry);
 
-        if(n->alias) {
-            add_assoc_string(entry, FORP_DUMP_ASSOC_FUNCTION, n->alias, 1);
-        } else if (n->function.function) {
-            add_assoc_string(entry, FORP_DUMP_ASSOC_FUNCTION, n->function.function, 1);
-        }
+            if (n->filename)
+                add_assoc_string(entry, FORP_DUMP_ASSOC_FILE, n->filename, 1);
 
-        if (n->lineno)
-            add_assoc_long(entry, FORP_DUMP_ASSOC_LINENO, n->lineno);
+            if (n->function.class)
+                add_assoc_string(entry, FORP_DUMP_ASSOC_CLASS, n->function.class, 1);
 
-        if (n->function.groups && n->function.groups_len > 0) {
-            zval *groups;
-            MAKE_STD_ZVAL(groups);
-            array_init(groups);
-            j = 0;
-            while(j < n->function.groups_len) {
-                add_next_index_string(groups, n->function.groups[j], 1);
-                j++;
+            if(n->alias) {
+                add_assoc_string(entry, FORP_DUMP_ASSOC_FUNCTION, n->alias, 1);
+            } else if (n->function.function) {
+                add_assoc_string(entry, FORP_DUMP_ASSOC_FUNCTION, n->function.function, 1);
             }
-            add_assoc_zval(entry, FORP_DUMP_ASSOC_GROUPS, groups);
+
+            if (n->lineno)
+                add_assoc_long(entry, FORP_DUMP_ASSOC_LINENO, n->lineno);
+
+            if (n->function.groups && n->function.groups_len > 0) {
+                MAKE_STD_ZVAL(groups);
+                array_init(groups);
+                j = 0;
+                while(j < n->function.groups_len) {
+                    add_next_index_string(groups, n->function.groups[j], 1);
+                    j++;
+                }
+                add_assoc_zval(entry, FORP_DUMP_ASSOC_GROUPS, groups);
+            }
+
+            if (n->caption) {
+                add_assoc_string(entry, FORP_DUMP_ASSOC_CAPTION, n->caption, 1);
+            }
+
+            if(FORP_G(flags) & FORP_FLAG_TIME) {
+
+                MAKE_STD_ZVAL(time);
+                ZVAL_DOUBLE(time, round(n->time * 1000000.0) / 1000000.0);
+                add_assoc_zval(entry, FORP_DUMP_ASSOC_DURATION, time);
+
+                MAKE_STD_ZVAL(profiler_duration);
+                ZVAL_DOUBLE(profiler_duration, round(n->profiler_duration * 1000000.0) / 1000000.0);
+                add_assoc_zval(entry, FORP_DUMP_ASSOC_PROFILERTIME, profiler_duration);
+            }
+
+            if(FORP_G(flags) & FORP_FLAG_MEMORY) {
+                add_assoc_long(entry, FORP_DUMP_ASSOC_MEMORY, n->mem);
+            }
+
+            add_assoc_long(entry, FORP_DUMP_ASSOC_LEVEL, n->level);
+
+            // {main} don't have parent
+            if (n->parent)
+                add_assoc_long(entry, FORP_DUMP_ASSOC_PARENT, n->parent->key);
+
+            if (
+                zend_hash_next_index_insert(Z_ARRVAL_P(stack), (void *) &entry,
+                sizeof (zval *), NULL) == FAILURE
+            ) {
+                return;
+            }
         }
+    }
 
-        if (n->caption) {
-            add_assoc_string(entry, FORP_DUMP_ASSOC_CAPTION, n->caption, 1);
-        }
+    if(FORP_G(inspect_len)) {
 
-        if(FORP_G(flags) & FORP_FLAG_TIME) {
-            zval *time, *profiler_duration;
-            MAKE_STD_ZVAL(time);
-            ZVAL_DOUBLE(time, round(n->time * 1000000.0) / 1000000.0);
-            add_assoc_zval(entry, FORP_DUMP_ASSOC_DURATION, time);
+        MAKE_STD_ZVAL(inspect);
+        array_init(inspect);
+        add_assoc_zval(FORP_G(dump), "inspect", inspect);
 
-            MAKE_STD_ZVAL(profiler_duration);
-            ZVAL_DOUBLE(profiler_duration, round(n->profiler_duration * 1000000.0) / 1000000.0);
-            add_assoc_zval(entry, FORP_DUMP_ASSOC_PROFILERTIME, profiler_duration);
-        }
-
-        if(FORP_G(flags) & FORP_FLAG_MEMORY) {
-            add_assoc_long(entry, FORP_DUMP_ASSOC_MEMORY, n->mem);
-        }
-
-        add_assoc_long(entry, FORP_DUMP_ASSOC_LEVEL, n->level);
-
-        // {main} don't have parent
-        if (n->parent)
-            add_assoc_long(entry, FORP_DUMP_ASSOC_PARENT, n->parent->key);
-
-        if (
-            zend_hash_next_index_insert(Z_ARRVAL_P(stack), (void *) &entry,
-            sizeof (zval *), NULL) == FAILURE
-        ) {
-            return;
+        for (i = 0; i < FORP_G(inspect_len); ++i) {
+            var = forp_stack_dump_var(FORP_G(inspect)[i] TSRMLS_CC);
+            if (
+                zend_hash_next_index_insert(Z_ARRVAL_P(inspect), (void *) &var,
+                sizeof (zval *), NULL) == FAILURE
+            ) {
+                return;
+            }
         }
     }
 }
@@ -559,26 +623,55 @@ void forp_stack_dump(TSRMLS_D) {
 /* {{{ forp_stack_dump_cli_node
  */
 void forp_stack_dump_cli_node(forp_node_t *n TSRMLS_DC) {
-    int j;
+    int i;
 
     if(FORP_G(flags) & FORP_FLAG_TIME) {
-        php_printf("[time:\x1B[35m%09.0f\x1B[0m] ", n->time);
+        php_printf("[time:\x1B[36m%09.0f\x1B[37m] ", n->time);
     }
     if(FORP_G(flags) & FORP_FLAG_MEMORY) {
-        php_printf("[mem:\x1B[35m%09d\x1B[0m] ", n->mem);
+        php_printf("[mem:\x1B[36m%09d\x1B[37m] ", n->mem);
     }
-    for (j = 0; j < n->level; ++j) {
-        if (j == n->level - 1) php_printf("\x1B[33m |--- \x1B[0m");
-        else php_printf("\x1B[33m |   \x1B[0m");
+    for (i = 0; i < n->level; ++i) {
+        if (i == n->level - 1) php_printf("\x1B[37m |--- \x1B[37m");
+        else php_printf("\x1B[37m |   \x1B[37m");
     }
-    if (n->function.class) php_printf("\x1B[34m\x1B[1m%s\x1B[0m::", n->function.class);
-    php_printf("\x1B[34m%s\x1B[0m", n->function.function);
+    if (n->function.class) php_printf("\x1B[1m%s\x1B[0m\x1B[37m::", n->function.class);
+    php_printf("%s", n->function.function);
     if(n->filename) {
         php_printf(" (%s", n->filename);
         if(n->lineno) php_printf(":%d", n->lineno);
         php_printf(")");
     }
-    php_printf("%s%s","\x1B[0m", PHP_EOL);
+    php_printf("%s%s","\x1B[37m", PHP_EOL);
+}
+/* }}} */
+
+/* {{{ forp_stack_dump_cli_var
+ */
+void forp_stack_dump_cli_var(forp_var_t *var, int depth TSRMLS_DC) {
+    int i, indent;
+
+    indent = depth*4;
+
+    if(var->name) php_printf("%*s%s:\n", indent, "", var->name);
+    if(var->prop) php_printf("%*s%s:\n", indent, "", var->prop);
+
+    php_printf("%*stype: %s\n", indent+2, "", var->type);
+
+    if(var->value) php_printf("%*svalue: %s\n", indent+2, "", var->value);
+
+    if(var->class) php_printf("%*sclass: %s\n", indent+2, "", var->class);
+
+    if(var->arr_len) {
+        php_printf("%*ssize: %d\n", indent+2, "", var->arr_len);
+
+        if(var->class) php_printf("%*sproperties:\n", indent+2, "");
+        else php_printf("%*svalues:\n", indent+2, "");
+
+        for (i = 0; i < var->arr_len; ++i) {
+            forp_stack_dump_cli_var(var->arr[i], depth+1 TSRMLS_CC);
+        }
+    }
 }
 /* }}} */
 
@@ -586,12 +679,20 @@ void forp_stack_dump_cli_node(forp_node_t *n TSRMLS_DC) {
  */
 void forp_stack_dump_cli(TSRMLS_D) {
     int i;
-    php_printf("--------------------------------------------------------------------------------%s", PHP_EOL);
+    if(FORP_G(inspect_len) > 0) {
+        php_printf("\n\x1B[37m-\x1B[36mdebug\x1B[37m--------------------------------------------------------------------------%s", PHP_EOL);
+        for (i = 0; i < FORP_G(inspect_len); ++i) {
+            forp_stack_dump_cli_var(FORP_G(inspect)[i], 0 TSRMLS_CC);
+        }
+    }
+    php_printf("\n\x1B[37m-\x1B[36mprofile\x1B[37m------------------------------------------------------------------------%s", PHP_EOL);
     for (i = 0; i < FORP_G(stack_len); ++i) {
         if(forp_not_printable(FORP_G(stack)[i] TSRMLS_CC)) continue;
         forp_stack_dump_cli_node(FORP_G(stack)[i] TSRMLS_CC);
     }
     php_printf("--------------------------------------------------------------------------------%s", PHP_EOL);
+    php_printf("forp %s%s", FORP_VERSION, PHP_EOL);
+    php_printf("--------------------------------------------------------------------------------\x1B[0m%s", PHP_EOL);
 }
 /* }}} */
 
@@ -603,12 +704,5 @@ int forp_not_printable(forp_node_t *n TSRMLS_DC) {
         || strstr(n->function.function, "forp_end")
         || strstr(n->function.function, "forp_start")
     );
-}
-/* }}} */
-
-/* {{{ forp_inspect
- */
-void forp_inspect(zval *expr TSRMLS_DC) {
-    php_printf("Not implemented yet !");
 }
 /* }}} */

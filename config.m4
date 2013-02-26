@@ -59,5 +59,5 @@ if test "$PHP_FORP" != "no"; then
   dnl
   dnl PHP_SUBST(FORP_SHARED_LIBADD)
 
-  PHP_NEW_EXTENSION(forp, php_forp.c forp.c forp_annotation.c forp_string.c, $ext_shared)
+  PHP_NEW_EXTENSION(forp, php_forp.c forp.c forp_annotation.c forp_string.c forp_log.c, $ext_shared)
 fi

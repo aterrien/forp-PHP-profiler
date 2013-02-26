@@ -21,6 +21,7 @@
 
 #include "php.h"
 #include "forp_string.h"
+#include "forp_log.h"
 
 #ifdef ZTS
 #include "TSRM.h"
@@ -80,6 +81,7 @@ typedef struct forp_node_t {
     double profiler_duration;
 } forp_node_t;
 
+
 /* proxy */
 zend_op_array* (*old_compile_file)(zend_file_handle* file_handle, int type TSRMLS_DC);
 zend_op_array* forp_compile_file(zend_file_handle*, int TSRMLS_DC);
@@ -113,15 +115,17 @@ void forp_execute(zend_op_array *op_array TSRMLS_DC);
 
 void forp_execute_internal(zend_execute_data *current_execute_data, int ret TSRMLS_DC);
 
+zval *forp_stack_dump_var(forp_var_t *var TSRMLS_DC);
+
 void forp_stack_dump(TSRMLS_D);
 
 void forp_stack_dump_cli_node(forp_node_t *node TSRMLS_DC);
 
+void forp_stack_dump_cli_var(forp_var_t *var, int depth TSRMLS_DC);
+
 void forp_stack_dump_cli(TSRMLS_D);
 
 int forp_not_printable(forp_node_t *n TSRMLS_DC);
-
-void forp_inspect(zval *expr TSRMLS_DC);
 
 #endif  /* FORP_H */
 

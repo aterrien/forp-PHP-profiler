@@ -22,6 +22,9 @@
 
 #include "php.h"
 #include "php_ini.h"
+
+#include "forp_log.h"
+
 #include "forp.h"
 #include "php_forp.h"
 
@@ -98,7 +101,7 @@ static void php_forp_init_globals(zend_forp_globals *forp_globals)
     forp_globals->utime = 0;
     forp_globals->stime = 0;
     forp_globals->inspect = NULL;
-    forp_globals->inspect_size = 0;
+    forp_globals->inspect_len = 0;
 }
 /* }}} */
 
@@ -164,6 +167,8 @@ PHP_RSHUTDOWN_FUNCTION(forp) {
 /* {{{ ZEND_MODULE_POST_ZEND_DEACTIVATE_D
  */
 ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp) {
+    int i, j;
+
     TSRMLS_FETCH();
 
     // TODO track not terminated node
@@ -176,7 +181,6 @@ ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp) {
 
     // stack dtor
     if (FORP_G(stack) != NULL) {
-        int i;
         for (i = 0; i < FORP_G(stack_len); ++i) {
             if(FORP_G(stack)[i]->function.groups) {
                 free(FORP_G(stack)[i]->function.groups);
@@ -191,6 +195,16 @@ ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp) {
     // dump dtor
     if (FORP_G(dump) != NULL) zval_ptr_dtor(&FORP_G(dump));
     FORP_G(dump) = NULL;
+
+    // inspect
+    if (FORP_G(inspect) != NULL) {
+        for (i = 0; i < FORP_G(inspect_len); ++i) {
+            if(FORP_G(inspect)[i]->arr_len) {
+                free(FORP_G(inspect)[i]->arr);
+            }
+            free(FORP_G(inspect)[i]);
+        }
+    }
 
     return SUCCESS;
 }
@@ -215,6 +229,8 @@ ZEND_FUNCTION(forp_enable) {
 }
 /* }}} */
 
+/* {{{ forp_start
+ */
 ZEND_FUNCTION(forp_start) {
     long opt = -1;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &opt) == FAILURE) {
@@ -224,10 +240,14 @@ ZEND_FUNCTION(forp_start) {
 
     forp_start(TSRMLS_C);
 }
+/* }}} */
 
+/* {{{ forp_end
+ */
 ZEND_FUNCTION(forp_end) {
     forp_end(TSRMLS_C);
 }
+/* }}} */
 
 /* {{{ forp_dump
  */
@@ -255,11 +275,11 @@ ZEND_FUNCTION(forp_print) {
 /* {{{ forp_inspect
  */
 ZEND_FUNCTION(forp_inspect) {
-    zval *mixed = NULL;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &mixed) == FAILURE) {
+    zval *expr = NULL;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z", &expr) == FAILURE) {
         return;
     }
-    //forp_inspect(expr TSRMLS_CC);
+    forp_inspect(expr TSRMLS_CC);
     RETURN_TRUE;
 }
 /* }}} */
