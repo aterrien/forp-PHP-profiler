@@ -43,7 +43,8 @@ forp_var_t *forp_zval_var(forp_var_t *v, zval *expr, int depth TSRMLS_DC) {
     int is_tmp;
     HashTable *ht;
 
-    v->prop = NULL;
+    v->key = NULL;
+    v->property = NULL;
     v->value = NULL;
     v->class = NULL;
     v->arr = NULL;
@@ -70,11 +71,14 @@ forp_var_t *forp_zval_var(forp_var_t *v, zval *expr, int depth TSRMLS_DC) {
             break;
         case IS_ARRAY :
             v->type = "array";
+            v->value = "*MAXDEPTH*";
             ht = Z_ARRVAL_P(expr);
             goto finalize_ht;
         case IS_OBJECT :
             v->type = "object";
             v->class = strdup(Z_OBJCE_P(expr)->name);
+            sprintf(s, "#%d", Z_OBJ_HANDLE_P(expr));
+            v->value = strdup(s);
             ht = Z_OBJDEBUG_P(expr, is_tmp);
 finalize_ht:
             if(depth < FORP_LOG_DEPTH + 1) {
@@ -86,6 +90,8 @@ finalize_ht:
                     forp_zval_var(v->arr[v->arr_len], *tmp, depth + 1 TSRMLS_CC);
 
                     v->arr[v->arr_len]->name = NULL;
+                    v->arr[v->arr_len]->property = NULL;
+                    v->arr[v->arr_len]->key = NULL;
                     switch (
                         zend_hash_get_current_key (
                             ht,
@@ -95,14 +101,15 @@ finalize_ht:
                             )
                     ) {
                         case HASH_KEY_IS_STRING:
-                            v->arr[v->arr_len]->prop = strdup(string_key);
+                            if(strcmp(v->type, "object") == 0) v->arr[v->arr_len]->property = strdup(string_key);
+                            else v->arr[v->arr_len]->key = strdup(string_key);
                             break;
                         case HASH_KEY_IS_LONG:
                             sprintf(s, "%d", num_key);
-                            v->arr[v->arr_len]->prop = strdup(s);
+                            v->arr[v->arr_len]->key = strdup(s);
                             break;
                         default:
-                            v->arr[v->arr_len]->prop = strdup(string_key);
+                            v->arr[v->arr_len]->key = strdup(string_key);
                             break;
                     }
 
@@ -110,8 +117,6 @@ finalize_ht:
 
                     zend_hash_move_forward(ht);
                 }
-            } else {
-                v->value = "*MAXDEPTH*";
             }
 
             break;

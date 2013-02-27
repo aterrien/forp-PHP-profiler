@@ -19,7 +19,7 @@
 #ifndef FORP_LOG_H
 #define FORP_LOG_H
 
-#define FORP_LOG_DEPTH    2
+#define FORP_LOG_DEPTH    1
 
 #include "php.h"
 
@@ -30,7 +30,8 @@
 typedef struct forp_var_t {
     char *type;
     char *name;
-    char *prop;
+    char *key;
+    char *property;
     char *value;
     char *class;
     struct forp_var_t **arr;

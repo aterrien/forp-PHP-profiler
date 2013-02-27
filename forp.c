@@ -116,13 +116,13 @@ static void forp_populate_function(
     }
 
     // Stores filename
-    if (op_array) {
+    if (op_array && op_array->filename) {
         function->filename = strdup(op_array->filename);
     } else {
-        if (edata->op_array) {
+        if (edata->op_array && edata->op_array->filename) {
             function->filename = strdup(edata->op_array->filename);
         } else {
-            function->filename = "";
+            function->filename = NULL;
         }
     }
 }
@@ -194,12 +194,12 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
         forp_populate_function(&(n->function), edata, op_array TSRMLS_CC);
 
         // Retrieves filename
-        if(FORP_G(current_node)) {
+        if(FORP_G(current_node) && FORP_G(current_node)->function.filename) {
             n->filename = strdup(FORP_G(current_node)->function.filename);
         }
 
         // Retrieves call lineno
-        if(edata->opline) {
+        if(edata->opline && n->filename) {
             n->lineno = edata->opline->lineno;
         }
 
@@ -260,8 +260,14 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
         //n->parent = NULL;
         n->function.class = NULL;
         n->function.function = "{main}";
-        n->function.filename = strdup(edata->op_array->filename);
-        n->filename = strdup(edata->op_array->filename);
+
+        if(edata->op_array->filename) {
+            n->function.filename = strdup(edata->op_array->filename);
+            n->filename = strdup(n->function.filename);
+        } else {
+            n->function.filename = NULL;
+            n->filename = NULL;
+        }
     }
 
     FORP_G(current_node) = n;
@@ -468,7 +474,8 @@ zval *forp_stack_dump_var(forp_var_t *var TSRMLS_DC) {
     array_init(zvar);
 
     if(var->name) add_assoc_string(zvar, "name", var->name, 1);
-    if(var->prop) add_assoc_string(zvar, "prop", var->prop, 1);
+    if(var->property) add_assoc_string(zvar, "property", var->property, 1);
+    if(var->key) add_assoc_string(zvar, "key", var->key, 1);
     if(var->type) add_assoc_string(zvar, "type", var->type, 1);
     if(var->class) add_assoc_string(zvar, "class", var->class, 1);
     if(var->arr_len) {
@@ -478,7 +485,6 @@ zval *forp_stack_dump_var(forp_var_t *var TSRMLS_DC) {
         array_init(zarr);
         i = 0;
         while(i < var->arr_len) {
-            //add_next_index_string(zarr, forp_stack_dump_var(var->arr[i] TSRMLS_CC), 1);
             zval *entry;
             entry  = forp_stack_dump_var(var->arr[i] TSRMLS_CC);
             if (
@@ -490,7 +496,9 @@ zval *forp_stack_dump_var(forp_var_t *var TSRMLS_DC) {
 
             i++;
         }
-        add_assoc_zval(zvar, "value", zarr);
+        if(strcmp(var->type, "object") == 0) add_assoc_zval(zvar, "properties", zarr);
+        else add_assoc_zval(zvar, "value", zarr);
+
     } else {
         if(var->value) add_assoc_string(zvar, "value", var->value, 1);
     }
@@ -654,7 +662,8 @@ void forp_stack_dump_cli_var(forp_var_t *var, int depth TSRMLS_DC) {
     indent = depth*4;
 
     if(var->name) php_printf("%*s%s:\n", indent, "", var->name);
-    if(var->prop) php_printf("%*s%s:\n", indent, "", var->prop);
+    if(var->property) php_printf("%*s%s:\n", indent, "", var->property);
+    if(var->key) php_printf("%*s%s:\n", indent, "", var->key);
 
     php_printf("%*stype: %s\n", indent+2, "", var->type);
 
