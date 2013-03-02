@@ -19,7 +19,7 @@
 #ifndef FORP_LOG_H
 #define FORP_LOG_H
 
-#define FORP_LOG_DEPTH    1
+#define FORP_LOG_DEPTH    2
 
 #include "php.h"
 
@@ -31,11 +31,13 @@ typedef struct forp_var_t {
     char *type;
     char *name;
     char *key;
-    char *property;
+    char *level;
     char *value;
     char *class;
     struct forp_var_t **arr;
     int arr_len;
+    int is_ref;
+    int refcount;
 } forp_var_t;
 
 forp_var_t *forp_zval_var(forp_var_t *v, zval *expr, int depth TSRMLS_DC);

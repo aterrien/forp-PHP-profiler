@@ -9,11 +9,10 @@ forp_start();
 var_dump('test');
 forp_print();
 $res = ob_get_clean();
-echo strpos($res,'-----------------------------------------------------------------------------------------------------------')>0;
+echo strpos($res,'--------------------------------------------------------------------------------')>0;
 echo strpos($res,'time:')>0;
-echo strpos($res,'memory:')>0;
+echo strpos($res,'mem:')>0;
 echo strpos($res,'{main}')>0;
-echo strpos($res,'└──')>0;
 ?>
 --EXPECT--
-11111
+1111

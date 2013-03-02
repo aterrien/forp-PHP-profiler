@@ -71,6 +71,8 @@ ZEND_BEGIN_MODULE_GLOBALS(forp)
     //struct hashtable_t *functions;
     int inspect_len;
     forp_var_t **inspect;
+    long inspect_depth_array;
+    long inspect_depth_object;
 ZEND_END_MODULE_GLOBALS(forp)
 
 ZEND_DECLARE_MODULE_GLOBALS(forp);

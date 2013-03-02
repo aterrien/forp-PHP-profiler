@@ -81,6 +81,8 @@ ZEND_GET_MODULE(forp)
 PHP_INI_BEGIN()
     STD_PHP_INI_ENTRY("forp.max_nesting_level", "50", PHP_INI_ALL, OnUpdateLong, max_nesting_level, zend_forp_globals, forp_globals)
     STD_PHP_INI_BOOLEAN("forp.no_internals", "0", PHP_INI_ALL, OnUpdateBool, no_internals, zend_forp_globals, forp_globals)
+    STD_PHP_INI_ENTRY("forp.inspect_depth_object", "2", PHP_INI_ALL, OnUpdateLong, inspect_depth_object, zend_forp_globals, forp_globals)
+    STD_PHP_INI_ENTRY("forp.inspect_depth_array", "2", PHP_INI_ALL, OnUpdateLong, inspect_depth_object, zend_forp_globals, forp_globals)
 PHP_INI_END()
 /* }}} */
 
@@ -102,6 +104,8 @@ static void php_forp_init_globals(zend_forp_globals *forp_globals)
     forp_globals->stime = 0;
     forp_globals->inspect = NULL;
     forp_globals->inspect_len = 0;
+    forp_globals->inspect_depth_array = 2;
+    forp_globals->inspect_depth_object = 2;
 }
 /* }}} */
 

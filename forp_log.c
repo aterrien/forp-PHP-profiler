@@ -35,20 +35,23 @@
 /* {{{ forp_zval_var
  */
 forp_var_t *forp_zval_var(forp_var_t *v, zval *expr, int depth TSRMLS_DC) {
+
     char    s[32];
-    char    *string_key;
-    uint    string_key_len;
-    ulong   num_key;
+    char    *key, *class_name, *prop_name;
+    uint    key_len, is_tmp;
+    ulong   idx, max_depth;
     zval    **tmp;
-    int is_tmp;
     HashTable *ht;
 
+    v->level = NULL;
     v->key = NULL;
-    v->property = NULL;
     v->value = NULL;
     v->class = NULL;
     v->arr = NULL;
     v->arr_len = 0;
+
+    v->is_ref = PZVAL_IS_REF(expr);
+    if(Z_REFCOUNT_P(expr)>1) v->refcount = Z_REFCOUNT_P(expr);
 
     switch(Z_TYPE_P(expr)) {
         case IS_DOUBLE :
@@ -71,8 +74,8 @@ forp_var_t *forp_zval_var(forp_var_t *v, zval *expr, int depth TSRMLS_DC) {
             break;
         case IS_ARRAY :
             v->type = "array";
-            v->value = "*MAXDEPTH*";
             ht = Z_ARRVAL_P(expr);
+            max_depth = FORP_G(inspect_depth_array);
             goto finalize_ht;
         case IS_OBJECT :
             v->type = "object";
@@ -80,36 +83,45 @@ forp_var_t *forp_zval_var(forp_var_t *v, zval *expr, int depth TSRMLS_DC) {
             sprintf(s, "#%d", Z_OBJ_HANDLE_P(expr));
             v->value = strdup(s);
             ht = Z_OBJDEBUG_P(expr, is_tmp);
+            max_depth = FORP_G(inspect_depth_object);
 finalize_ht:
-            if(depth < FORP_LOG_DEPTH + 1) {
-                v->arr_len = 0;
-                while (zend_hash_get_current_data(ht, (void **)&tmp) == SUCCESS) {
+
+            if(depth < max_depth + 1) {
+
+                zend_hash_internal_pointer_reset(ht);
+                while (zend_hash_get_current_data(ht, (void **) &tmp) == SUCCESS) {
 
                     v->arr = realloc(v->arr, (v->arr_len+1) * sizeof(forp_var_t));
                     v->arr[v->arr_len] = malloc(sizeof(forp_var_t));
+                    v->arr[v->arr_len]->name = NULL;
+
                     forp_zval_var(v->arr[v->arr_len], *tmp, depth + 1 TSRMLS_CC);
 
-                    v->arr[v->arr_len]->name = NULL;
-                    v->arr[v->arr_len]->property = NULL;
-                    v->arr[v->arr_len]->key = NULL;
-                    switch (
-                        zend_hash_get_current_key (
-                            ht,
-                            &string_key,
-                            &num_key,
-                            0
-                            )
-                    ) {
-                        case HASH_KEY_IS_STRING:
-                            if(strcmp(v->type, "object") == 0) v->arr[v->arr_len]->property = strdup(string_key);
-                            else v->arr[v->arr_len]->key = strdup(string_key);
+                    switch (zend_hash_get_current_key_ex(ht, &key, &key_len, &idx, 0, NULL)) {
+                        case HASH_KEY_IS_STRING :
+                            if(strcmp(v->type, "object") == 0) {
+                                zend_unmangle_property_name(key, key_len, &class_name, &prop_name);
+                                if (class_name) {
+                                    v->arr[v->arr_len]->type = strdup(class_name);
+                                    if (class_name[0] == '*') {
+                                            v->arr[v->arr_len]->level = "protected";
+                                    } else {
+                                            v->arr[v->arr_len]->level = "private";
+                                    }
+                                } else {
+                                    v->arr[v->arr_len]->level = "public";
+                                }
+                                v->arr[v->arr_len]->key = strdup(prop_name);
+                            } else {
+                                v->arr[v->arr_len]->key = strdup(key);
+                            }
                             break;
                         case HASH_KEY_IS_LONG:
-                            sprintf(s, "%d", num_key);
+                            sprintf(s, "%d", idx);
                             v->arr[v->arr_len]->key = strdup(s);
                             break;
                         default:
-                            v->arr[v->arr_len]->key = strdup(string_key);
+                            v->arr[v->arr_len]->key = strdup(key);
                             break;
                     }
 
@@ -182,6 +194,7 @@ void forp_inspect(zval *expr TSRMLS_DC) {
     if(val != NULL) {
         v = malloc(sizeof(forp_var_t));
         v->name = strdup(name);
+
         forp_zval_var(v, *val, 1 TSRMLS_CC);
 
         FORP_G(inspect) = realloc(FORP_G(inspect), (FORP_G(inspect_len)+1) * sizeof(forp_var_t));

@@ -209,34 +209,30 @@ Result :
 ```php
 Array
 (
-    ...
-
+    [utime] => 0
+    [stime] => 0
     [inspect] => Array
         (
-            [0] => Array
+            [var] => Array
                 (
-                    [name] => var
                     [type] => array
                     [size] => 3
                     [value] => Array
                         (
                             [0] => Array
                                 (
-                                    [prop] => 0
                                     [type] => string
                                     [value] => my
                                 )
 
-                            [1] => Array
+                            [strkey] => Array
                                 (
-                                    [prop] => strkey
                                     [type] => string
                                     [value] => inspected
                                 )
 
-                            [2] => Array
+                            [3] => Array
                                 (
-                                    [prop] => 3
                                     [type] => string
                                     [value] => array
                                 )
@@ -246,6 +242,7 @@ Array
                 )
 
         )
+
 )
 ```
 

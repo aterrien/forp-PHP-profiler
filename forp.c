@@ -261,7 +261,11 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
         n->function.class = NULL;
         n->function.function = "{main}";
 
-        if(edata->op_array->filename) {
+        if(
+            edata
+            && edata->op_array
+            && edata->op_array->filename
+        ) {
             n->function.filename = strdup(edata->op_array->filename);
             n->filename = strdup(n->function.filename);
         } else {
@@ -468,32 +472,28 @@ void forp_execute_internal(zend_execute_data *current_execute_data, int ret TSRM
 zval *forp_stack_dump_var(forp_var_t *var TSRMLS_DC) {
 
     int i;
-    zval *zvar, *zarr;
+    zval *zvar, *zarr, *entry;
 
     MAKE_STD_ZVAL(zvar);
     array_init(zvar);
 
-    if(var->name) add_assoc_string(zvar, "name", var->name, 1);
-    if(var->property) add_assoc_string(zvar, "property", var->property, 1);
-    if(var->key) add_assoc_string(zvar, "key", var->key, 1);
+    if(var->level) add_assoc_string(zvar, "level", var->level, 1);
     if(var->type) add_assoc_string(zvar, "type", var->type, 1);
+    if(var->is_ref) {
+        add_assoc_long(zvar, "is_ref", var->is_ref);
+        if(var->refcount > 1) add_assoc_long(zvar, "refcount", var->refcount);
+    }
     if(var->class) add_assoc_string(zvar, "class", var->class, 1);
     if(var->arr_len) {
         add_assoc_long(zvar, "size", var->arr_len);
 
         MAKE_STD_ZVAL(zarr);
         array_init(zarr);
+
         i = 0;
         while(i < var->arr_len) {
-            zval *entry;
             entry  = forp_stack_dump_var(var->arr[i] TSRMLS_CC);
-            if (
-                zend_hash_next_index_insert(Z_ARRVAL_P(zarr), (void *) &entry,
-                sizeof (zval *), NULL) == FAILURE
-            ) {
-                continue;
-            }
-
+            add_assoc_zval(zarr, var->arr[i]->key, entry);
             i++;
         }
         if(strcmp(var->type, "object") == 0) add_assoc_zval(zvar, "properties", zarr);
@@ -515,7 +515,6 @@ void forp_stack_dump(TSRMLS_D) {
     zval *entry, *stack, *groups, *time, *profiler_duration,
          *var, *inspect;
     forp_node_t *n;
-    forp_var_t *v;
 
     /**
      * array(
@@ -532,7 +531,6 @@ void forp_stack_dump(TSRMLS_D) {
         add_assoc_double(FORP_G(dump), "utime", FORP_G(utime));
         add_assoc_double(FORP_G(dump), "stime", FORP_G(stime));
     }
-
 
     if(FORP_G(stack_len)) {
 
@@ -600,12 +598,7 @@ void forp_stack_dump(TSRMLS_D) {
             if (n->parent)
                 add_assoc_long(entry, FORP_DUMP_ASSOC_PARENT, n->parent->key);
 
-            if (
-                zend_hash_next_index_insert(Z_ARRVAL_P(stack), (void *) &entry,
-                sizeof (zval *), NULL) == FAILURE
-            ) {
-                return;
-            }
+            zend_hash_next_index_insert(Z_ARRVAL_P(stack), (void *) &entry, sizeof (zval *), NULL);
         }
     }
 
@@ -617,12 +610,7 @@ void forp_stack_dump(TSRMLS_D) {
 
         for (i = 0; i < FORP_G(inspect_len); ++i) {
             var = forp_stack_dump_var(FORP_G(inspect)[i] TSRMLS_CC);
-            if (
-                zend_hash_next_index_insert(Z_ARRVAL_P(inspect), (void *) &var,
-                sizeof (zval *), NULL) == FAILURE
-            ) {
-                return;
-            }
+            add_assoc_zval(inspect, FORP_G(inspect)[i]->name, var);
         }
     }
 }
@@ -662,7 +650,6 @@ void forp_stack_dump_cli_var(forp_var_t *var, int depth TSRMLS_DC) {
     indent = depth*4;
 
     if(var->name) php_printf("%*s%s:\n", indent, "", var->name);
-    if(var->property) php_printf("%*s%s:\n", indent, "", var->property);
     if(var->key) php_printf("%*s%s:\n", indent, "", var->key);
 
     php_printf("%*stype: %s\n", indent+2, "", var->type);
