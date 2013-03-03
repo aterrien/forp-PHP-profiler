@@ -288,7 +288,7 @@ ZEND_FUNCTION(forp_inspect) {
     }
 
     forp_inspect_zval(name, expr TSRMLS_CC);
-    
+
     RETURN_TRUE;
 }
 /* }}} */

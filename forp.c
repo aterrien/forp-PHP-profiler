@@ -142,10 +142,12 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
     n = malloc(sizeof (forp_node_t));
 
     // getting function infos
-    if(edata) forp_populate_function(&(n->function), edata, op_array TSRMLS_CC);
-    if(forp_is_profiling_function(n TSRMLS_CC)) {
-        n->state = 2;
-        return n;
+    if(edata) {
+        forp_populate_function(&(n->function), edata, op_array TSRMLS_CC);
+        if(forp_is_profiling_function(n TSRMLS_CC)) {
+            free(n);
+            return NULL;
+        }
     }
 
     // self duration on open
@@ -201,7 +203,7 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
     }
 
     if(edata) {
-
+//forp_populate_function(&(n->function), edata, op_array TSRMLS_CC);
         // Retrieves filename
         if(FORP_G(current_node) && FORP_G(current_node)->function.filename) {
             n->filename = strdup(FORP_G(current_node)->function.filename);
@@ -451,7 +453,7 @@ void forp_execute(zend_op_array *op_array TSRMLS_DC) {
     } else {
         n = forp_open_node(EG(current_execute_data), op_array TSRMLS_CC);
         old_execute(op_array TSRMLS_CC);
-        if(n->state < 2) forp_close_node(n TSRMLS_CC);
+        if(n && n->state < 2) forp_close_node(n TSRMLS_CC);
     }
 }
 /* }}} */
@@ -471,7 +473,7 @@ void forp_execute_internal(zend_execute_data *current_execute_data, int ret TSRM
         } else {
             execute_internal(current_execute_data, ret TSRMLS_CC);
         }
-        if(n->state < 2) forp_close_node(n TSRMLS_CC);
+        if(n && n->state < 2) forp_close_node(n TSRMLS_CC);
     }
 }
 /* }}} */
@@ -525,14 +527,6 @@ void forp_stack_dump(TSRMLS_D) {
     zval *entry, *stack, *groups, *time, *profiler_duration,
          *var, *inspect;
     forp_node_t *n;
-
-    /**
-     * array(
-     *  'stime' => ,
-     *  'utime' => ,
-     *  'stack' => array(... entry+ ...)
-     * )
-     */
 
     MAKE_STD_ZVAL(FORP_G(dump));
     array_init(FORP_G(dump));
