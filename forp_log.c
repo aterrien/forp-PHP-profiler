@@ -75,6 +75,7 @@ forp_var_t *forp_zval_var(forp_var_t *v, zval *expr, int depth TSRMLS_DC) {
             break;
         case IS_ARRAY :
             v->type = "array";
+
             ht = Z_ARRVAL_P(expr);
             max_depth = FORP_G(inspect_depth_array);
             goto finalize_ht;
@@ -83,6 +84,7 @@ forp_var_t *forp_zval_var(forp_var_t *v, zval *expr, int depth TSRMLS_DC) {
             v->class = strdup(Z_OBJCE_P(expr)->name);
             sprintf(s, "#%d", Z_OBJ_HANDLE_P(expr));
             v->value = strdup(s);
+
             ht = Z_OBJDEBUG_P(expr, is_tmp);
             max_depth = FORP_G(inspect_depth_object);
 finalize_ht:
@@ -122,15 +124,23 @@ finalize_ht:
                             sprintf(s, "%d", idx);
                             v->arr[v->arr_len]->key = strdup(s);
                             break;
-                        default:
-                            v->arr[v->arr_len]->key = strdup(key);
+                        case HASH_KEY_NON_EXISTANT:
+                        default :
+                            v->arr[v->arr_len]->key = "*";
                             break;
                     }
+
+                    /*php_printf(
+                            "%*s > %s\n", depth, "",
+                            v->arr[v->arr_len]->key
+                            );*/
 
                     v->arr_len++;
 
                     zend_hash_move_forward(ht);
                 }
+            } else {
+                php_printf("depth %d\n", depth);
             }
 
             break;
