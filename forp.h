@@ -125,7 +125,7 @@ void forp_stack_dump_cli_var(forp_var_t *var, int depth TSRMLS_DC);
 
 void forp_stack_dump_cli(TSRMLS_D);
 
-int forp_not_printable(forp_node_t *n TSRMLS_DC);
+int forp_is_profiling_function(forp_node_t *n TSRMLS_DC);
 
 #endif  /* FORP_H */
 

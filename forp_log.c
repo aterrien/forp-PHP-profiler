@@ -42,6 +42,7 @@ forp_var_t *forp_zval_var(forp_var_t *v, zval *expr, int depth TSRMLS_DC) {
     ulong   idx, max_depth;
     zval    **tmp;
     HashTable *ht;
+    char    *resource_type;
 
     v->level = NULL;
     v->key = NULL;
@@ -94,6 +95,7 @@ finalize_ht:
                     v->arr = realloc(v->arr, (v->arr_len+1) * sizeof(forp_var_t));
                     v->arr[v->arr_len] = malloc(sizeof(forp_var_t));
                     v->arr[v->arr_len]->name = NULL;
+                    v->arr[v->arr_len]->stack_idx = -1;
 
                     forp_zval_var(v->arr[v->arr_len], *tmp, depth + 1 TSRMLS_CC);
 
@@ -133,10 +135,11 @@ finalize_ht:
 
             break;
         case IS_RESOURCE :
-            //sprintf(s, "#%d", Z_OBJ_HANDLE_P(expr));
-            //char *type_name;
-            //type_name = zend_rsrc_list_get_rsrc_type(Z_LVAL_P(expr) TSRMLS_CC);
-            v->type = "resource"; // type_name
+            v->type = "resource";
+            resource_type = zend_rsrc_list_get_rsrc_type(Z_LVAL_P(expr) TSRMLS_CC);
+            if(resource_type) {
+                v->value = strdup(resource_type);
+            }
             break;
         case IS_NULL :
             v->type = "null";
@@ -169,37 +172,15 @@ zval **forp_find_symbol(char* name TSRMLS_DC) {
 }
 /* }}} */
 
-/* {{{ forp_inspect
- */
-void forp_inspect(zval *expr TSRMLS_DC) {
+/* {{{ forp_inspect_symbol
+ *
+void forp_inspect_symbol(char *name TSRMLS_DC) {
     forp_var_t *v = NULL;
     zval **val;
-    char* name;
 
-    if(Z_TYPE_P(expr) != IS_STRING) {
-        //name = "*";
-        //val = &expr;
-
-        php_error_docref(
-            NULL TSRMLS_CC,
-            E_NOTICE,
-            "Can't inspect anything other than the name of a symbol."
-            );
-
-        return;
-    }
-
-    name = Z_STRVAL_P(expr);
     val = forp_find_symbol(name TSRMLS_CC);
     if(val != NULL) {
-        v = malloc(sizeof(forp_var_t));
-        v->name = strdup(name);
-
         forp_zval_var(v, *val, 1 TSRMLS_CC);
-
-        FORP_G(inspect) = realloc(FORP_G(inspect), (FORP_G(inspect_len)+1) * sizeof(forp_var_t));
-        FORP_G(inspect)[FORP_G(inspect_len)] = v;
-        FORP_G(inspect_len)++;
     } else {
         php_error_docref(
             NULL TSRMLS_CC,
@@ -208,5 +189,29 @@ void forp_inspect(zval *expr TSRMLS_DC) {
             name
             );
     }
+}
+/* }}} */
+
+/* {{{ forp_inspect_zval
+ */
+void forp_inspect_zval(char* name, zval *expr TSRMLS_DC) {
+    forp_var_t *v = NULL;
+
+    v = malloc(sizeof(forp_var_t));
+    v->name = strdup(name);
+
+    // if profiling started then attach the
+    // current node index
+    if(FORP_G(current_node)) {
+        v->stack_idx = FORP_G(current_node)->key ;
+    } else {
+        v->stack_idx = -1;
+    }
+
+    forp_zval_var(v, expr, 1 TSRMLS_CC);
+
+    FORP_G(inspect) = realloc(FORP_G(inspect), (FORP_G(inspect_len)+1) * sizeof(forp_var_t));
+    FORP_G(inspect)[FORP_G(inspect_len)] = v;
+    FORP_G(inspect_len)++;
 }
 /* }}} */

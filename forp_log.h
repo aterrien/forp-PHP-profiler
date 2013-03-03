@@ -35,16 +35,19 @@ typedef struct forp_var_t {
     char *value;
     char *class;
     struct forp_var_t **arr;
-    int arr_len;
-    int is_ref;
+    uint arr_len;
+    uint is_ref;
     int refcount;
+    int stack_idx;
 } forp_var_t;
 
 forp_var_t *forp_zval_var(forp_var_t *v, zval *expr, int depth TSRMLS_DC);
 
 zval **forp_find_symbol(char* name TSRMLS_DC);
 
-void forp_inspect(zval *expr TSRMLS_DC);
+//void forp_inspect_symbol(char *name TSRMLS_DC);
+
+void forp_inspect_zval(char* name, zval *expr TSRMLS_DC);
 
 #endif  /* FORP_LOG_H */
 

@@ -196,12 +196,12 @@ Fields of a stack entry :
 
 ## forp_inspect() ##
 
-forp_inspect('symbol_name') will output a detailed representation of a variable in the forp_dump() result.
+forp_inspect('symbol', $symbol) will output a detailed representation of a variable in the forp_dump() result.
 
 Usage :
 ```php
 $var = array(0 => "my", "strkey" => "inspected", 3 => "array");
-forp_inspect('var');
+forp_inspect('var', $var);
 print_r(forp_dump());
 ```
 

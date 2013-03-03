@@ -136,15 +136,25 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
     int key;
     double start_time;
 
+    // preparing current node
+    // will be profiled after
+    // forp_is_profiling_function test
+    n = malloc(sizeof (forp_node_t));
+
+    // getting function infos
+    if(edata) forp_populate_function(&(n->function), edata, op_array TSRMLS_CC);
+    if(forp_is_profiling_function(n TSRMLS_CC)) {
+        n->state = 2;
+        return n;
+    }
+
     // self duration on open
     gettimeofday(&tv, NULL);
     start_time = tv.tv_sec * 1000000.0 + tv.tv_usec;
 
-    // Inits node
-    n = malloc(sizeof (forp_node_t));
-
-    n->level = FORP_G(nesting_level)++;
+    // continues node init
     n->state = 1; // opened
+    n->level = FORP_G(nesting_level)++;
     n->parent = FORP_G(current_node);
 
     n->time_begin = 0;
@@ -191,7 +201,6 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
     }
 
     if(edata) {
-        forp_populate_function(&(n->function), edata, op_array TSRMLS_CC);
 
         // Retrieves filename
         if(FORP_G(current_node) && FORP_G(current_node)->function.filename) {
@@ -483,6 +492,7 @@ zval *forp_stack_dump_var(forp_var_t *var TSRMLS_DC) {
         add_assoc_long(zvar, "is_ref", var->is_ref);
         if(var->refcount > 1) add_assoc_long(zvar, "refcount", var->refcount);
     }
+    if(var->stack_idx > -1) add_assoc_long(zvar, "stack_idx", var->stack_idx);
     if(var->class) add_assoc_string(zvar, "class", var->class, 1);
     if(var->arr_len) {
         add_assoc_long(zvar, "size", var->arr_len);
@@ -541,7 +551,7 @@ void forp_stack_dump(TSRMLS_D) {
         for (i = 0; i < FORP_G(stack_len); ++i) {
             n = FORP_G(stack)[i];
 
-            if(forp_not_printable(n TSRMLS_CC)) continue;
+            //if(forp_is_profiling_function(n TSRMLS_CC)) continue;
 
             // stack entry
             MAKE_STD_ZVAL(entry);
@@ -683,7 +693,7 @@ void forp_stack_dump_cli(TSRMLS_D) {
     }
     php_printf("\n\x1B[37m-\x1B[36mprofile\x1B[37m------------------------------------------------------------------------%s", PHP_EOL);
     for (i = 0; i < FORP_G(stack_len); ++i) {
-        if(forp_not_printable(FORP_G(stack)[i] TSRMLS_CC)) continue;
+        //if(forp_is_profiling_function(FORP_G(stack)[i] TSRMLS_CC)) continue;
         forp_stack_dump_cli_node(FORP_G(stack)[i] TSRMLS_CC);
     }
     php_printf("--------------------------------------------------------------------------------%s", PHP_EOL);
@@ -692,13 +702,16 @@ void forp_stack_dump_cli(TSRMLS_D) {
 }
 /* }}} */
 
-/* {{{ forp_not_printable
+/* {{{ forp_is_profiling_function
  */
-int forp_not_printable(forp_node_t *n TSRMLS_DC) {
+int forp_is_profiling_function(forp_node_t *n TSRMLS_DC) {
+    if(!n->function.function) return 0;
     return (
-        strstr(n->function.function, "forp_dump")
-        || strstr(n->function.function, "forp_end")
+        strstr(n->function.function, "forp_inspect")
         || strstr(n->function.function, "forp_start")
+        || strstr(n->function.function, "forp_end")
+        || strstr(n->function.function, "forp_dump")
+        || strstr(n->function.function, "forp_print")
     );
 }
 /* }}} */
