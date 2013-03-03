@@ -45,7 +45,6 @@ forp_var_t *forp_zval_var(forp_var_t *v, zval *expr, int depth TSRMLS_DC) {
     char    *resource_type;
 
     v->level = NULL;
-    v->key = NULL;
     v->value = NULL;
     v->class = NULL;
     v->arr = NULL;
@@ -99,8 +98,6 @@ finalize_ht:
                     v->arr[v->arr_len]->name = NULL;
                     v->arr[v->arr_len]->stack_idx = -1;
 
-                    forp_zval_var(v->arr[v->arr_len], *tmp, depth + 1 TSRMLS_CC);
-
                     switch (zend_hash_get_current_key_ex(ht, &key, &key_len, &idx, 0, NULL)) {
                         case HASH_KEY_IS_STRING :
                             if(strcmp(v->type, "object") == 0) {
@@ -129,6 +126,8 @@ finalize_ht:
                             v->arr[v->arr_len]->key = "*";
                             break;
                     }
+
+                    forp_zval_var(v->arr[v->arr_len], *tmp, depth + 1 TSRMLS_CC);
 
                     /*php_printf(
                             "%*s > %s\n", depth, "",
@@ -209,6 +208,7 @@ void forp_inspect_zval(char* name, zval *expr TSRMLS_DC) {
 
     v = malloc(sizeof(forp_var_t));
     v->name = strdup(name);
+    v->key = NULL;
 
     // if profiling started then attach the
     // current node index

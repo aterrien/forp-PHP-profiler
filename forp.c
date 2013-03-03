@@ -203,7 +203,7 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
     }
 
     if(edata) {
-//forp_populate_function(&(n->function), edata, op_array TSRMLS_CC);
+        
         // Retrieves filename
         if(FORP_G(current_node) && FORP_G(current_node)->function.filename) {
             n->filename = strdup(FORP_G(current_node)->function.filename);
