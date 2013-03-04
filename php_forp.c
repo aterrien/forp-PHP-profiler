@@ -159,7 +159,6 @@ PHP_RSHUTDOWN_FUNCTION(forp) {
             zend_execute = old_execute;
         }
         if (!FORP_G(no_internals)) {
-            zend_compile_file = old_compile_file;
             zend_execute_internal = old_execute_internal;
         }
     }

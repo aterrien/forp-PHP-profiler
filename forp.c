@@ -203,7 +203,7 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
     }
 
     if(edata) {
-        
+
         // Retrieves filename
         if(FORP_G(current_node) && FORP_G(current_node)->function.filename) {
             n->filename = strdup(FORP_G(current_node)->function.filename);
@@ -268,7 +268,6 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
     } else {
         // Root node
         edata = EG(current_execute_data);
-        //n->parent = NULL;
         n->function.class = NULL;
         n->function.function = "{main}";
 
@@ -377,9 +376,6 @@ void forp_start(TSRMLS_D) {
         zend_execute = forp_execute;
 
         if (!FORP_G(no_internals)) {
-            old_compile_file = zend_compile_file;
-            zend_compile_file = forp_compile_file;
-
             old_execute_internal = zend_execute_internal;
             zend_execute_internal = forp_execute_internal;
         }
@@ -404,20 +400,16 @@ void forp_end(TSRMLS_D) {
         }
 #endif
 
-        // Close ancestors
+        // Closing ancestors
         while(FORP_G(current_node)) {
             forp_close_node(FORP_G(current_node) TSRMLS_CC);
         }
 
-        // Close main
-        //forp_close_node(FORP_G(main) TSRMLS_CC);
-
-        // Restores zend api methods
+        // Restores Zend API methods
         if (old_execute) {
             zend_execute = old_execute;
         }
         if (!FORP_G(no_internals)) {
-            zend_compile_file = old_compile_file;
             zend_execute_internal = old_execute_internal;
         }
 
@@ -433,13 +425,6 @@ void forp_info(TSRMLS_D) {
     php_info_print_table_start();
     php_info_print_table_row(2, "Version", FORP_VERSION);
     php_info_print_table_end();
-}
-/* }}} */
-
-/* {{{ forp_compile_file
- */
-zend_op_array *forp_compile_file(zend_file_handle *file_handle, int type TSRMLS_DC) {
-    return old_compile_file(file_handle, type TSRMLS_CC);
 }
 /* }}} */
 

@@ -43,11 +43,9 @@
 #define FORP_STACK_REALLOC              1000
 
 typedef struct forp_function_t {
-    //char *_filename;
     char *filename;
     char *class;
     char *function;
-    //int lineno;
     int type;
     char **groups;
     int groups_len;
@@ -82,16 +80,12 @@ typedef struct forp_node_t {
 } forp_node_t;
 
 
-/* proxy */
-zend_op_array* (*old_compile_file)(zend_file_handle* file_handle, int type TSRMLS_DC);
-zend_op_array* forp_compile_file(zend_file_handle*, int TSRMLS_DC);
-
+/* Zend API proxies */
 void (*old_execute)(zend_op_array *op_array TSRMLS_DC);
 void forp_execute(zend_op_array *op_array TSRMLS_DC);
 
 void (*old_execute_internal)(zend_execute_data *current_execute_data, int return_value_used TSRMLS_DC);
 void forp_execute_internal(zend_execute_data *current_execute_data, int return_value_used TSRMLS_DC);
-
 
 #if defined(PHP_WIN32)
 char* forp_strndup(const char* s, size_t n);
@@ -100,8 +94,6 @@ char* forp_strndup(const char* s, size_t n);
 static void forp_populate_function(forp_function_t *function, zend_execute_data *edata, zend_op_array *op_array TSRMLS_DC);
 
 void forp_info(TSRMLS_D);
-
-zend_op_array *forp_compile_file(zend_file_handle *file_handle, int type TSRMLS_DC);
 
 void forp_start(TSRMLS_D);
 

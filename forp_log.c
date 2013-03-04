@@ -138,8 +138,6 @@ finalize_ht:
 
                     zend_hash_move_forward(ht);
                 }
-            } else {
-                php_printf("depth %d\n", depth);
             }
 
             break;
