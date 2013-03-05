@@ -200,14 +200,8 @@ ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp) {
     FORP_G(dump) = NULL;
 
     // inspect
-    if (FORP_G(inspect) != NULL) {
-        for (i = 0; i < FORP_G(inspect_len); ++i) {
-            if(FORP_G(inspect)[i]->arr_len) {
-                free(FORP_G(inspect)[i]->arr);
-            }
-            free(FORP_G(inspect)[i]);
-        }
-    }
+    if (FORP_G(inspect) != NULL) free(FORP_G(inspect));
+    FORP_G(inspect) = NULL;
 
     return SUCCESS;
 }
