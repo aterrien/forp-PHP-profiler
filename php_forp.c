@@ -57,7 +57,7 @@ zend_module_entry forp_module_entry = {
     forp_functions,
     PHP_MINIT(forp), // Main init
     PHP_MSHUTDOWN(forp), // Main shutdown
-    NULL, //PHP_RINIT(forp), // Request init
+    PHP_RINIT(forp), // Request init
     PHP_RSHUTDOWN(forp), // Request shutdown
     PHP_MINFO(forp),
 #if ZEND_MODULE_API_NO >= 20010901
@@ -148,6 +148,32 @@ PHP_MINIT_FUNCTION(forp) {
     return SUCCESS;
 }
 /* }}} */
+
+/* {{{ PHP_RINIT_FUNCTION
+ */
+PHP_RINIT_FUNCTION(forp) {
+
+    FORP_G(started) = 0;
+    FORP_G(flags) = FORP_FLAG_TIME | FORP_FLAG_MEMORY | FORP_FLAG_ANNOTATIONS | FORP_FLAG_CPU;
+    FORP_G(stack_len) = 0;
+    FORP_G(nesting_level) = 0;
+    FORP_G(dump) = NULL;
+    FORP_G(stack) = NULL;
+    FORP_G(main) = NULL;
+    FORP_G(current_node) = NULL;
+    FORP_G(utime) = 0;
+    FORP_G(stime) = 0;
+    FORP_G(inspect) = NULL;
+    FORP_G(inspect_len) = 0;
+
+    // globals
+    //FORP_G(max_nesting_level) = 50;
+    //FORP_G(no_internals) = 0;
+    //FORP_G(inspect_depth_array) = 2;
+    //FORP_G(inspect_depth_object) = 2;
+
+    return SUCCESS;
+}
 
 /* {{{ PHP_RSHUTDOWN_FUNCTION
  */

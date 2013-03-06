@@ -41,7 +41,7 @@ extern zend_module_entry forp_module_entry;
 
 PHP_MINIT_FUNCTION(forp);
 PHP_MSHUTDOWN_FUNCTION(forp);
-//PHP_RINIT_FUNCTION(forp);
+PHP_RINIT_FUNCTION(forp);
 PHP_RSHUTDOWN_FUNCTION(forp);
 PHP_MINFO_FUNCTION(forp);
 ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp);
