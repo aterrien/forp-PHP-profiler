@@ -306,6 +306,8 @@ forp provides a structure so simple that it's easy to make your own UI.
 
 But, if you are looking for a user interface with a lot of features, we've made a rich JavaScript client : [forp-ui](https://github.com/aterrien/forp-ui/).
 
+![groups](https://raw.github.com/aterrien/forp-ui/master/doc/ui-consolas-groups.png)
+
 # Build status #
 
 [![Build Status](https://secure.travis-ci.org/aterrien/forp.png)](http://travis-ci.org/aterrien/forp)
