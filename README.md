@@ -304,7 +304,8 @@ function render($datas) {
 
 forp provides a structure so simple that it's easy to make your own UI.
 
-But, if you are looking for a user interface with a lot of features, we've made a rich JavaScript client : [forp-ui](https://github.com/aterrien/forp-ui/) | [demo](http://87.117.252.103/hello).
+But, if you are looking for a user interface with a lot of features, we've made a rich JavaScript client :
+[forp-ui](https://github.com/aterrien/forp-ui/) | [demo - Silex](http://87.117.252.103/silex/hello) | [demo - Laravel](http://87.117.252.103/laravel/hello)..
 
 ![groups](https://raw.github.com/aterrien/forp-ui/master/doc/ui-consolas-groups.png)
 
