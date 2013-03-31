@@ -360,8 +360,7 @@ extension=forp.so
 
 ### Apache ###
 
-Server version: Apache/2.2.16 (Debian)
-Server built:   Apr  1 2012 06:40:07
+Apache/2.2.16 (Debian)
 
 PHP 5.3.8 (cli) (built: Sep 25 2012 22:55:18)
 Copyright (c) 1997-2011 The PHP Group
@@ -371,10 +370,9 @@ Zend Engine v2.3.0, Copyright (c) 1998-2011 Zend Technologies
 
 nginx version: nginx/1.2.6
 
-PHP 5.3.21-1~dotdeb.0 (fpm-fcgi) (built: Jan 27 2013 11:32:08)
-Copyright (c) 1997-2013 The PHP Group
-Zend Engine v2.3.0, Copyright (c) 1998-2013 Zend Technologies
-    with Suhosin v0.9.32.1, Copyright (c) 2007-2010, by SektionEins GmbH
+PHP 5.3.21-1~dotdeb.0 (fpm-fcgi)
+
+PHP 5.4.10-1~dotdeb.0 (fpm-fcgi)
 
 # Contributors #
 
