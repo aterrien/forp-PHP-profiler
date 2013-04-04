@@ -179,27 +179,25 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
     n->function.groups = NULL;
     n->function.groups_len = 0;
 
-    // Handles fn annotations to know what to do
-    if((FORP_G(flags) & FORP_FLAG_ANNOTATIONS) && op_array && op_array->doc_comment) {
-
-        // Alias : allows to give a name to anonymous functions
-        n->alias = forp_annotation_string(op_array->doc_comment, "ProfileAlias" TSRMLS_CC);
-
-        // Caption
-        n->caption = forp_annotation_string(op_array->doc_comment, "ProfileCaption" TSRMLS_CC);
-
-        // Group
-        // TODO no alloc / realloc when group found
-        n->function.groups = malloc(sizeof(char*) * 10);
-        n->function.groups_len = 0;
-        forp_annotation_array(op_array->doc_comment, "ProfileGroup", &(n->function.groups), &(n->function.groups_len) TSRMLS_CC);
-
-        // Frame
-        n->function.highlight = forp_annotation_string(op_array->doc_comment, "ProfileHighlight" TSRMLS_CC);
-        if(n->function.highlight) php_printf(FORP_HIGHLIGHT_BEGIN);
-
-    } else {
-        n->function.highlight = NULL;
+    // Handles annotations
+    if(op_array && op_array->doc_comment) {
+        if(FORP_G(flags) & FORP_FLAG_ALIAS) {
+            n->alias = forp_annotation_string(op_array->doc_comment, "ProfileAlias" TSRMLS_CC);
+        }
+        if(FORP_G(flags) & FORP_FLAG_CAPTION) {
+            n->caption = forp_annotation_string(op_array->doc_comment, "ProfileCaption" TSRMLS_CC);
+        }
+        if(FORP_G(flags) & FORP_FLAG_GROUPS) {
+            n->function.groups = malloc(sizeof(char*) * 10);
+            n->function.groups_len = 0;
+            forp_annotation_array(op_array->doc_comment, "ProfileGroup", &(n->function.groups), &(n->function.groups_len) TSRMLS_CC);
+        }
+        if(FORP_G(flags) & FORP_FLAG_HIGHLIGHT) {
+            n->function.highlight = forp_annotation_string(op_array->doc_comment, "ProfileHighlight" TSRMLS_CC);
+            if(n->function.highlight) php_printf(FORP_HIGHLIGHT_BEGIN);
+        } else {
+            n->function.highlight = NULL;
+        }
     }
 
     if(edata) {

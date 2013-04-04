@@ -19,10 +19,18 @@
 #define PHP_FORP_H
 
 #define FORP_VERSION                        "1.1.0"
+
 #define FORP_FLAG_TIME                      0x0001
 #define FORP_FLAG_MEMORY                    0x0002
-#define FORP_FLAG_ANNOTATIONS               0x0004
-#define FORP_FLAG_CPU                       0x0008
+#define FORP_FLAG_CPU                       0x0004
+
+#define FORP_FLAG_ALIAS                     0x0020
+#define FORP_FLAG_CAPTION                   0x0040
+#define FORP_FLAG_GROUPS                    0x0080
+#define FORP_FLAG_HIGHLIGHT                 0x0100
+#define FORP_FLAG_ANNOTATIONS               0x01E0
+
+#define FORP_FLAG_ALL                       0x03FF
 
 extern zend_module_entry forp_module_entry;
 #define phpext_forp_ptr &forp_module_entry

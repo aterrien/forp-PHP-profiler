@@ -165,8 +165,11 @@ Array
 
 - FORP_FLAG_CPU : activate collect of time
 - FORP_FLAG_MEMORY : activate collect of memory usage
-- FORP_FLAG_ANNOTATIONS : activate annotations handler
 - FORP_FLAG_CPU : retrieve the cpu usage
+- FORP_FLAG_CAPTION : enable caption handler
+- FORP_FLAG_ALIAS : enable alias handler
+- FORP_FLAG_GROUPS : enable groups handler
+- FORP_FLAG_HIGHLIGHT : enable HTML highlighting
 
 ## forp_dump() ##
 
