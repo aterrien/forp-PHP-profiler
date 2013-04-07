@@ -178,6 +178,7 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
     n->caption = NULL;
     n->function.groups = NULL;
     n->function.groups_len = 0;
+    n->function.highlight = NULL;
 
     // Handles annotations
     if(op_array && op_array->doc_comment) {
@@ -195,8 +196,6 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
         if(FORP_G(flags) & FORP_FLAG_HIGHLIGHT) {
             n->function.highlight = forp_annotation_string(op_array->doc_comment, "ProfileHighlight" TSRMLS_CC);
             if(n->function.highlight) php_printf(FORP_HIGHLIGHT_BEGIN);
-        } else {
-            n->function.highlight = NULL;
         }
     }
 
@@ -333,7 +332,7 @@ void forp_close_node(forp_node_t *n TSRMLS_DC) {
     }
 
     if(n->function.highlight) {
-        php_printf(FORP_HIGHLIGHT_END, (n->time / 1000), (n->mem / 1024), n->level);
+        php_printf(FORP_HIGHLIGHT_END, n->caption != NULL ? n->caption : "", (n->time / 1000), (n->mem / 1024), n->level);
     }
 
     FORP_G(current_node) = n->parent;
