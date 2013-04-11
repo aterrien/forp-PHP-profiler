@@ -38,7 +38,7 @@
 #define FORP_DUMP_ASSOC_PARENT          "parent"
 #define FORP_DUMP_ASSOC_GROUPS          "groups"
 #define FORP_DUMP_ASSOC_CAPTION         "caption"
-#define FORP_HIGHLIGHT_BEGIN            "<div style='position: relative; border: 1px solid #555; margin: 2px; padding: 20px 2px 2px 2px'>toto"
+#define FORP_HIGHLIGHT_BEGIN            "<div style='position: relative; border: 1px solid #555; margin: 2px; padding: 20px 2px 2px 2px'>"
 #define FORP_HIGHLIGHT_END              "<div style='position: absolute; top: 0px; right: 0px; left: 0px; height: 14px; background: #555; color: #eee; padding: 2px 5px; font-family: Consolas, monaco, monospace; font-size: 10px; text-align: right'>%s %.03f ms, %d b, level %d</div></div>"
 #define FORP_STACK_REALLOC              1000
 
