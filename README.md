@@ -303,14 +303,17 @@ function render($datas) {
 }
 ```
 
-# UI #
+# Demos / UI #
 
 forp provides a structure so simple that it's easy to make your own UI.
 
 But, if you are looking for a user interface with a lot of features, we've made a rich JavaScript client :
 [forp-ui](https://github.com/aterrien/forp-ui/)
 
-Demos : [Silex](http://87.117.252.103/silex/hello) | [Laravel](http://87.117.252.103/laravel/hello)
+You can see forp in action with the fastest PHP Frameworks :
+- [Beaba](http://87.117.252.103/beaba/hello)
+- [Silex](http://87.117.252.103/silex/hello)
+- [Laravel](http://87.117.252.103/laravel/hello)
 
 ![groups](https://raw.github.com/aterrien/forp-ui/master/doc/ui-consolas-groups.png)
 
@@ -366,21 +369,27 @@ extension=forp.so
 Apache/2.2.16 (Debian)
 
 PHP 5.3.8 (cli) (built: Sep 25 2012 22:55:18)
-Copyright (c) 1997-2011 The PHP Group
-Zend Engine v2.3.0, Copyright (c) 1998-2011 Zend Technologies
 
 ### Nginx / php-fpm ###
 
 nginx version: nginx/1.2.6
 
 PHP 5.3.21-1~dotdeb.0 (fpm-fcgi)
-
 PHP 5.4.10-1~dotdeb.0 (fpm-fcgi)
+
+### Cloud / AWS ###
+
+Centos 6.3 (AMI)
+
+Apache/2.2.15 (Unix)
+
+PHP 5.4.13 (cli) (built: Mar 15 2013 11:27:51)
 
 # Contributors #
 
 [Anthony Terrien](https://github.com/aterrien/),
-[Ioan Chiriac](https://github.com/ichiriac/)
+[Ioan Chiriac](https://github.com/ichiriac/),
+[Alexis Okuwa](https://github.com/wojons/)
 
 # MIT License
 
