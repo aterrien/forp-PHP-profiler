@@ -311,9 +311,10 @@ But, if you are looking for a user interface with a lot of features, we've made 
 [forp-ui](https://github.com/aterrien/forp-ui/)
 
 You can see forp in action with the fastest PHP Frameworks :
-- [Beaba](http://87.117.252.103/beaba/hello)
-- [Silex](http://87.117.252.103/silex/hello)
-- [Laravel](http://87.117.252.103/laravel/hello)
+- [Beaba](http://87.117.252.103/beaba/hello) (https://github.com/ichiriac/beaba-light)
+- [Slim](http://87.117.252.103/slim/hello) (https://github.com/codeguy/Slim)
+- [Silex](http://87.117.252.103/silex/hello) (https://github.com/fabpot/Silex)
+- [Laravel](http://87.117.252.103/laravel/hello) (https://github.com/laravel/laravel)
 
 ![groups](https://raw.github.com/aterrien/forp-ui/master/doc/ui-consolas-groups.png)
 
