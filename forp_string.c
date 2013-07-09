@@ -65,7 +65,7 @@ char *forp_substr_replace(char *subject, char *replace, unsigned int start, unsi
  * @param char* subject
  * @return char*
  */
-char *forp_str_replace(char *search,  char *replace, char *subject) {
+char *forp_str_replace(char *search,  char *replace, char *subject TSRMLS_DC) {
     char *ret, *sr;
     size_t i, count = 0;
     size_t newlen = strlen(replace);
