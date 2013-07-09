@@ -276,8 +276,8 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
             n->function.filename = strdup(edata->op_array->filename);
             n->filename = strdup(n->function.filename);
         } else {
-            n->function.filename = NULL;
-            n->filename = NULL;
+            n->function.filename = zend_get_executed_filename(TSRMLS_C);
+            n->filename = n->function.filename;
         }
     }
 
@@ -688,6 +688,7 @@ int forp_is_profiling_function(forp_node_t *n TSRMLS_DC) {
         || strstr(n->function.function, "forp_end")
         || strstr(n->function.function, "forp_dump")
         || strstr(n->function.function, "forp_print")
+        || strstr(n->function.function, "forp_json")
     );
 }
 /* }}} */

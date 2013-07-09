@@ -43,6 +43,7 @@ const zend_function_entry forp_functions[] = {
     PHP_FE(forp_info, NULL)
     PHP_FE(forp_enable, NULL)
     PHP_FE(forp_inspect, NULL)
+    PHP_FE(forp_json, NULL)
     {NULL,NULL,NULL} /*PHP_FE_END*/
 };
 /* }}} */
@@ -325,5 +326,12 @@ ZEND_FUNCTION(forp_inspect) {
     forp_inspect_zval(name, expr TSRMLS_CC);
 
     RETURN_TRUE;
+}
+/* }}} */
+
+/* {{{ forp_json
+ */
+ZEND_FUNCTION(forp_json) {
+    forp_json(TSRMLS_C);
 }
 /* }}} */

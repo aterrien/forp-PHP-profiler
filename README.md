@@ -197,6 +197,13 @@ Fields of a stack entry :
 - level : depth level from the forp_start call
 - parent : parent index (numeric)
 
+## forp_json() ##
+
+Prints stack as JSON string directly on stdout.
+This is the fastest method in order to send the stack to a JSON compatible client.
+
+See forp_dump() for its structure.
+
 ## forp_inspect() ##
 
 forp_inspect('symbol', $symbol) will output a detailed representation of a variable in the forp_dump() result.
