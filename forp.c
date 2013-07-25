@@ -261,7 +261,6 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
                 );
             }
         }
-
     } else {
         // Root node
         edata = EG(current_execute_data);
