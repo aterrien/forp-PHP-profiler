@@ -32,6 +32,13 @@
 #include "TSRM.h"
 #endif
 
+#if defined(PHP_WIN32)
+double round(double d)
+{
+  return floor(d + 0.5);
+}
+#endif
+
 /* {{{ forp_json
  */
 void forp_json(TSRMLS_D) {
