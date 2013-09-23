@@ -43,23 +43,6 @@ static inline double round(double val) {
 #include <sys/resource.h>
 #endif
 
-#if defined(PHP_WIN32)
-char* forp_strndup(const char* s, size_t n) {
-    size_t slen = (size_t)strlen(s);
-    char* copy;
-    if (slen < n) {
-        n = slen;
-    }
-    copy = malloc(n+1);
-    if (copy) {
-        memcpy(copy, s, n);
-        copy[n] = 0;
-    }
-    return copy;
-}
-#define strndup(s,n) forp_strndup(s, n)
-#endif
-
 /* {{{ forp_populate_function
  */
 static void forp_populate_function(

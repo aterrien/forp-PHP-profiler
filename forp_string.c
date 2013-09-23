@@ -30,6 +30,23 @@
 #endif
 
 /* {{{ forp_substr_replace
+ */
+char* forp_strndup(const char* s, size_t n) {
+    size_t slen = (size_t)strlen(s);
+    char* copy;
+    if (slen < n) {
+        n = slen;
+    }
+    copy = malloc(n+1);
+    if (copy) {
+        memcpy(copy, s, n);
+        copy[n] = 0;
+    }
+    return copy;
+}
+/* }}} */
+
+/* {{{ forp_substr_replace
  *
  * @param char* subject
  * @param uint start

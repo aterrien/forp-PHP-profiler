@@ -87,10 +87,6 @@ void forp_execute(zend_op_array *op_array TSRMLS_DC);
 void (*old_execute_internal)(zend_execute_data *current_execute_data, int return_value_used TSRMLS_DC);
 void forp_execute_internal(zend_execute_data *current_execute_data, int return_value_used TSRMLS_DC);
 
-#if defined(PHP_WIN32)
-char* forp_strndup(const char* s, size_t n);
-#endif
-
 static void forp_populate_function(forp_function_t *function, zend_execute_data *edata, zend_op_array *op_array TSRMLS_DC);
 
 void forp_info(TSRMLS_D);
