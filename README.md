@@ -327,7 +327,7 @@ You can see forp in action with the fastest PHP Frameworks :
 
 # Build status #
 
-[![Build Status](https://secure.travis-ci.org/aterrien/forp.png)](http://travis-ci.org/aterrien/forp)
+[![Build Status](https://secure.travis-ci.org/aterrien/forp-PHP-profiler.png)](http://travis-ci.org/aterrien/forp-PHP-profiler)
 
 # Installation, requirements #
 
