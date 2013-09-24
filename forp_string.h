@@ -31,6 +31,8 @@ char *forp_substr_replace(char *subject, char *replace, unsigned int start, unsi
 
 char *forp_str_replace(char *search, char *replace, char *subject TSRMLS_DC);
 
+char *forp_addslashes(char *subject TSRMLS_DC);
+
 #if defined(PHP_WIN32)
 #define strndup(s,n) forp_strndup(s, n)
 #endif

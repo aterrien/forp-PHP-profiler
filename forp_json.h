@@ -20,12 +20,15 @@
 #define FORP_JSON_H
 
 #include "php.h"
+#include "forp_log.h"
 
 #ifdef ZTS
 #include "TSRM.h"
 #endif
 
 void forp_json(TSRMLS_D);
+
+void forp_json_inspect(forp_var_t *var TSRMLS_DC);
 
 #endif  /* FORP_JSON_H */
 

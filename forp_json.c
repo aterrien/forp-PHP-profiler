@@ -25,7 +25,7 @@
 
 #include "forp.h"
 #include "php_forp.h"
-
+#include "forp_string.h"
 #include "forp_json.h"
 
 #ifdef ZTS
@@ -158,6 +158,54 @@ void forp_json(TSRMLS_D) {
 
             if(i < FORP_G(stack_len) - 1) php_printf(",");
         }
-        php_printf("]}");
+				if(FORP_G(inspect_len)) {
+						php_printf("],\"inspect\":{");
+						for (i = 0; i < FORP_G(inspect_len); i++) {
+								php_printf("\"%s\": {",FORP_G(inspect)[i]->name);
+								forp_json_inspect(FORP_G(inspect)[i] TSRMLS_CC);
+								if ( i + 1 < FORP_G(inspect_len) )  {
+										php_printf("},");
+								} else {
+										php_printf("}");
+								}
+						}
+						php_printf("}}");
+				} else {
+						php_printf("]}");
+				}
     }
+}
+
+/* {{{ forp_json_inspect
+ * Recursive output inspect structure
+ */
+void forp_json_inspect(forp_var_t *var TSRMLS_DC) {		
+		uint i;
+		if(var->stack_idx > -1) php_printf("\"stack_idx\":%d,", var->stack_idx);
+    if(var->type) php_printf("\"type\":\"%s\",", var->type);
+    if(var->level) php_printf("\"level\":\"%s\",", var->level);
+		if(var->class) php_printf("\"class\":\"%s\",", var->class);
+		if(var->is_ref) {
+        php_printf("\"is_ref\": true,");
+        if(var->refcount > 1) php_printf("\"refcount\":%d,", var->refcount);
+    }
+		if(var->arr_len) {
+				if(strcmp(var->type, "object") == 0) {
+						php_printf("\"properties\":{");
+				} else {
+						php_printf("\"value\":{");
+				}
+				for(i = 0; i < var->arr_len; i++) {
+						php_printf("\"%s\": {", forp_addslashes(var->arr[i]->key));
+            forp_json_inspect(var->arr[i] TSRMLS_CC);
+						if ( i + 1 < var->arr_len ) {
+								php_printf("},");
+						} else {
+								php_printf("}");
+						}
+        }
+				php_printf("}");
+		} else {
+				php_printf("\"value\":\"%s\"", forp_addslashes(var->value TSRMLS_CC));
+		}
 }

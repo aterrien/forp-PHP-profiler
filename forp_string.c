@@ -22,7 +22,7 @@
 
 #include "php.h"
 #include "php_ini.h"
-
+#include <stdio.h>
 #include "forp_string.h"
 
 #ifdef ZTS
@@ -43,6 +43,40 @@ char* forp_strndup(const char* s, size_t n) {
         copy[n] = 0;
     }
     return copy;
+}
+/* }}} */
+
+/* {{{ forp_addslashes
+ */
+char *forp_addslashes(char *subject TSRMLS_DC) {
+    return subject;
+    /*char *result = NULL;
+    char c;
+    size_t sSize = (size_t)strlen(subject);
+    uint rSize = 0;
+    uint i = 0;
+    uint j = 0;
+    for(i = 0; i < sSize; i++) {
+        c  = subject[i];
+        if (c == '/' || c == '\\' || c == '\"' || c == '\'') {
+            rSize++;
+        }
+    }
+    if ( rSize > 0 ) {
+        //result = malloc(sSize + rSize + 1);
+        if ( result != NULL ) {
+            for(i = 0; i < sSize; i++) {
+                c = subject[i];
+                if (c == '/' || c == '\\'  || c == '\"' || c == '\'') {
+                    result[j++] = '\\';
+                }
+                result[j++] = c;
+            }
+            //subject = strdup(result);
+            //free(result);
+        }
+    }
+    return subject;*/
 }
 /* }}} */
 
