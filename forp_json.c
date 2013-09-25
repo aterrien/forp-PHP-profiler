@@ -196,7 +196,7 @@ void forp_json_inspect(forp_var_t *var TSRMLS_DC) {
 						php_printf("\"value\":{");
 				}
 				for(i = 0; i < var->arr_len; i++) {
-						php_printf("\"%s\": {", forp_addslashes(var->arr[i]->key));
+						php_printf("\"%s\": {", forp_addslashes(var->arr[i]->key TSRMLS_CC));
             forp_json_inspect(var->arr[i] TSRMLS_CC);
 						if ( i + 1 < var->arr_len ) {
 								php_printf("},");
