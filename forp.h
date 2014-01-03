@@ -81,8 +81,13 @@ typedef struct forp_node_t {
 
 
 /* Zend API proxies */
+#if PHP_VERSION_ID < 50500
 void (*old_execute)(zend_op_array *op_array TSRMLS_DC);
 void forp_execute(zend_op_array *op_array TSRMLS_DC);
+#else
+void (*old_execute)(zend_execute_data *execute_data TSRMLS_DC);
+void forp_execute_ex(zend_execute_data *execute_data TSRMLS_DC);
+#endif
 
 void (*old_execute_internal)(zend_execute_data *current_execute_data, int return_value_used TSRMLS_DC);
 void forp_execute_internal(zend_execute_data *current_execute_data, int return_value_used TSRMLS_DC);

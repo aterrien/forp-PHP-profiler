@@ -351,8 +351,13 @@ void forp_start(TSRMLS_D) {
 #endif
 
         // Proxying zend api methods
+#if PHP_VERSION_ID < 50500
         old_execute = zend_execute;
         zend_execute = forp_execute;
+#else
+        old_execute = zend_execute_ex;
+        zend_execute_ex = forp_execute_ex;
+#endif
 
         if (!FORP_G(no_internals)) {
             old_execute_internal = zend_execute_internal;
@@ -386,7 +391,11 @@ void forp_end(TSRMLS_D) {
 
         // Restores Zend API methods
         if (old_execute) {
+#if PHP_VERSION_ID < 50500
             zend_execute = old_execute;
+#else
+            zend_execute_ex = old_execute;
+#endif
         }
         if (!FORP_G(no_internals)) {
             zend_execute_internal = old_execute_internal;
@@ -409,14 +418,31 @@ void forp_info(TSRMLS_D) {
 
 /* {{{ forp_execute
  */
-void forp_execute(zend_op_array *op_array TSRMLS_DC) {
+#if PHP_VERSION_ID < 50500
+void forp_execute(zend_op_array *op_array TSRMLS_DC)
+{
+        zend_execute_data    *edata = EG(current_execute_data);
+#else
+void forp_execute_ex(zend_execute_data *execute_data TSRMLS_DC)
+{
+        zend_op_array        *op_array = execute_data->op_array;
+        zend_execute_data    *edata = execute_data->prev_execute_data;
+#endif
     forp_node_t *n;
 
     if (FORP_G(nesting_level) > FORP_G(max_nesting_level)) {
+#if PHP_VERSION_ID < 50500
         old_execute(op_array TSRMLS_CC);
+#else
+        old_execute(execute_data  TSRMLS_CC);
+#endif
     } else {
-        n = forp_open_node(EG(current_execute_data), op_array TSRMLS_CC);
+        n = forp_open_node(edata, op_array TSRMLS_CC);
+#if PHP_VERSION_ID < 50500
         old_execute(op_array TSRMLS_CC);
+#else
+        old_execute(execute_data  TSRMLS_CC);
+#endif
         if(n && n->state < 2) forp_close_node(n TSRMLS_CC);
     }
 }
@@ -593,7 +619,7 @@ void forp_stack_dump_cli_node(forp_node_t *n TSRMLS_DC) {
         php_printf("[time:\x1B[36m%09.0f\x1B[37m] ", n->time);
     }
     if(FORP_G(flags) & FORP_FLAG_MEMORY) {
-        php_printf("[mem:\x1B[36m%09d\x1B[37m] ", n->mem);
+        php_printf("[mem:\x1B[36m%09d\x1B[37m] ", (int)n->mem);
     }
     for (i = 0; i < n->level; ++i) {
         if (i == n->level - 1) php_printf("\x1B[37m |--- \x1B[37m");
