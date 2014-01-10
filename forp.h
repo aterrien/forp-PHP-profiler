@@ -85,7 +85,7 @@ typedef struct forp_node_t {
 void (*old_execute)(zend_op_array *op_array TSRMLS_DC);
 void forp_execute(zend_op_array *op_array TSRMLS_DC);
 #else
-void (*old_execute)(zend_execute_data *execute_data TSRMLS_DC);
+void (*old_execute_ex)(zend_execute_data *execute_data TSRMLS_DC);
 void forp_execute_ex(zend_execute_data *execute_data TSRMLS_DC);
 #endif
 

@@ -355,7 +355,7 @@ void forp_start(TSRMLS_D) {
         old_execute = zend_execute;
         zend_execute = forp_execute;
 #else
-        old_execute = zend_execute_ex;
+        old_execute_ex = zend_execute_ex;
         zend_execute_ex = forp_execute_ex;
 #endif
 
@@ -390,13 +390,17 @@ void forp_end(TSRMLS_D) {
         }
 
         // Restores Zend API methods
-        if (old_execute) {
 #if PHP_VERSION_ID < 50500
+        if (old_execute) {
             zend_execute = old_execute;
-#else
-            zend_execute_ex = old_execute;
-#endif
+            old_execute = 0;
         }
+#else
+        if (old_execute_ex) {
+            zend_execute_ex = old_execute_ex;
+            old_execute_ex = 0;
+        }
+#endif
         if (!FORP_G(no_internals)) {
             zend_execute_internal = old_execute_internal;
         }
