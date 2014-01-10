@@ -258,7 +258,7 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
             n->function.filename = strdup(edata->op_array->filename);
             n->filename = strdup(n->function.filename);
         } else {
-            n->function.filename = zend_get_executed_filename(TSRMLS_C);
+            n->function.filename = (char*) zend_get_executed_filename(TSRMLS_C);
             n->filename = n->function.filename;
         }
     }
@@ -358,12 +358,10 @@ void forp_start(TSRMLS_D) {
         old_execute_ex = zend_execute_ex;
         zend_execute_ex = forp_execute_ex;
 #endif
-
         if (!FORP_G(no_internals)) {
             old_execute_internal = zend_execute_internal;
             zend_execute_internal = forp_execute_internal;
         }
-
         FORP_G(main) = forp_open_node(NULL, NULL TSRMLS_CC);
     }
 }
@@ -404,7 +402,6 @@ void forp_end(TSRMLS_D) {
         if (!FORP_G(no_internals)) {
             zend_execute_internal = old_execute_internal;
         }
-
         // Stop
         FORP_G(started) = 0;
     }
@@ -454,18 +451,34 @@ void forp_execute_ex(zend_execute_data *execute_data TSRMLS_DC)
 
 /* {{{ forp_execute_internal
  */
+#if PHP_VERSION_ID < 50500
 void forp_execute_internal(zend_execute_data *current_execute_data, int ret TSRMLS_DC)
+#else
+void forp_execute_internal(zend_execute_data *current_execute_data, struct _zend_fcall_info *fci, int ret TSRMLS_DC)
+#endif
 {
     forp_node_t *n;
 
     if (FORP_G(nesting_level) > FORP_G(max_nesting_level)) {
+#if PHP_VERSION_ID < 50500
         execute_internal(current_execute_data, ret TSRMLS_CC);
+#else
+        execute_internal(current_execute_data, fci, ret TSRMLS_CC);
+#endif
     } else {
         n = forp_open_node(EG(current_execute_data), NULL TSRMLS_CC);
         if (old_execute_internal) {
+#if PHP_VERSION_ID < 50500
             old_execute_internal(current_execute_data, ret TSRMLS_CC);
+#else
+            old_execute_internal(current_execute_data, fci, ret TSRMLS_CC);
+#endif
         } else {
+#if PHP_VERSION_ID < 50500
             execute_internal(current_execute_data, ret TSRMLS_CC);
+#else
+            execute_internal(current_execute_data, fci, ret TSRMLS_CC);
+#endif
         }
         if(n && n->state < 2) forp_close_node(n TSRMLS_CC);
     }

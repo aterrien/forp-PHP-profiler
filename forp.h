@@ -84,13 +84,15 @@ typedef struct forp_node_t {
 #if PHP_VERSION_ID < 50500
 void (*old_execute)(zend_op_array *op_array TSRMLS_DC);
 void forp_execute(zend_op_array *op_array TSRMLS_DC);
+void (*old_execute_internal)(zend_execute_data *current_execute_data, int return_value_used TSRMLS_DC);
+void forp_execute_internal(zend_execute_data *current_execute_data, int return_value_used TSRMLS_DC);
 #else
 void (*old_execute_ex)(zend_execute_data *execute_data TSRMLS_DC);
 void forp_execute_ex(zend_execute_data *execute_data TSRMLS_DC);
+void (*old_execute_internal)(zend_execute_data *current_execute_data, struct _zend_fcall_info *fci, int return_value_used TSRMLS_DC);
+void forp_execute_internal(zend_execute_data *current_execute_data, struct _zend_fcall_info *fci, int return_value_used TSRMLS_DC);
 #endif
 
-void (*old_execute_internal)(zend_execute_data *current_execute_data, int return_value_used TSRMLS_DC);
-void forp_execute_internal(zend_execute_data *current_execute_data, int return_value_used TSRMLS_DC);
 
 static void forp_populate_function(forp_function_t *function, zend_execute_data *edata, zend_op_array *op_array TSRMLS_DC);
 
@@ -103,10 +105,6 @@ void forp_end(TSRMLS_D);
 forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TSRMLS_DC);
 
 void forp_close_node(forp_node_t *pn TSRMLS_DC);
-
-void forp_execute(zend_op_array *op_array TSRMLS_DC);
-
-void forp_execute_internal(zend_execute_data *current_execute_data, int ret TSRMLS_DC);
 
 zval *forp_stack_dump_var(forp_var_t *var TSRMLS_DC);
 
