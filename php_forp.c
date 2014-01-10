@@ -197,13 +197,7 @@ PHP_RINIT_FUNCTION(forp) {
 PHP_RSHUTDOWN_FUNCTION(forp) {
 
     if(FORP_G(started)) {
-        // Restores zend api methods
-        if (old_execute) {
-            zend_execute = old_execute;
-        }
-        if (!FORP_G(no_internals)) {
-            zend_execute_internal = old_execute_internal;
-        }
+        forp_end(TSRMLS_C);
     }
 
     return SUCCESS;
@@ -247,6 +241,24 @@ ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp) {
     FORP_G(inspect) = NULL;
 
     return SUCCESS;
+}
+/* }}} */
+
+/* {{{ forp_stats
+ */
+ZEND_FUNCTION(forp_stats) {
+    int i;
+    zval *zvar;
+    MAKE_STD_ZVAL(zvar);
+    array_init(zvar);
+    if(FORP_G(inspect_len) > 0) {
+        php_printf("\n\x1B[37m-\x1B[36mdebug\x1B[37m--------------------------------------------------------------------------%s", PHP_EOL);
+        for (i = 0; i < FORP_G(inspect_len); ++i) {
+            forp_stack_dump_cli_var(FORP_G(inspect)[i], 0 TSRMLS_CC);
+        }
+    }
+    RETURN_ZVAL(zvar, 1, 0);
+
 }
 /* }}} */
 
