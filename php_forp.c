@@ -31,10 +31,6 @@
 #include "ext/standard/info.h"
 #include "zend_exceptions.h"
 
-/* {{{ forp_functions[]
- *
- * Every user visible function must have an entry in forp_functions[].
- */
 const zend_function_entry forp_functions[] = {
     PHP_FE(forp_start, NULL)
     PHP_FE(forp_end, NULL)
@@ -46,10 +42,7 @@ const zend_function_entry forp_functions[] = {
     PHP_FE(forp_json, NULL)
     {NULL,NULL,NULL} /*PHP_FE_END*/
 };
-/* }}} */
 
-/* {{{ forp_module_entry
- */
 zend_module_entry forp_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
     STANDARD_MODULE_HEADER,
@@ -71,24 +64,18 @@ zend_module_entry forp_module_entry = {
     ZEND_MODULE_POST_ZEND_DEACTIVATE_N(forp),
     STANDARD_MODULE_PROPERTIES_EX
 };
-/* }}} */
 
 #ifdef COMPILE_DL_FORP
 ZEND_GET_MODULE(forp)
 #endif
 
-/* {{{ PHP_INI
- */
 PHP_INI_BEGIN()
     STD_PHP_INI_ENTRY("forp.max_nesting_level", "50", PHP_INI_ALL, OnUpdateLong, max_nesting_level, zend_forp_globals, forp_globals)
     STD_PHP_INI_BOOLEAN("forp.no_internals", "0", PHP_INI_ALL, OnUpdateBool, no_internals, zend_forp_globals, forp_globals)
     STD_PHP_INI_ENTRY("forp.inspect_depth_object", "2", PHP_INI_ALL, OnUpdateLong, inspect_depth_object, zend_forp_globals, forp_globals)
     STD_PHP_INI_ENTRY("forp.inspect_depth_array", "2", PHP_INI_ALL, OnUpdateLong, inspect_depth_object, zend_forp_globals, forp_globals)
 PHP_INI_END()
-/* }}} */
 
-/* {{{ PHP_GINIT_FUNCTION
- */
 static void php_forp_init_globals(zend_forp_globals *forp_globals)
 {
     forp_globals->started = 0;
@@ -108,33 +95,21 @@ static void php_forp_init_globals(zend_forp_globals *forp_globals)
     forp_globals->inspect_depth_array = 2;
     forp_globals->inspect_depth_object = 2;
 }
-/* }}} */
 
-/* {{{ PHP_MSHUTDOWN_FUNCTION
- */
 PHP_MSHUTDOWN_FUNCTION(forp) {
     return SUCCESS;
 }
-/* }}} */
 
-/* {{{ PHP_MINFO_FUNCTION
- */
 PHP_MINFO_FUNCTION(forp) {
     forp_info(TSRMLS_C);
     DISPLAY_INI_ENTRIES();
 }
-/* }}} */
 
-/* {{{ forp_info
- */
 ZEND_FUNCTION(forp_info) {
     php_info_print_style(TSRMLS_C);
     forp_info(TSRMLS_C);
 }
-/* }}} */
 
-/* {{{ PHP_MINIT_FUNCTION
- */
 PHP_MINIT_FUNCTION(forp) {
 
     ZEND_INIT_MODULE_GLOBALS(forp, php_forp_init_globals, NULL);
@@ -164,10 +139,7 @@ PHP_MINIT_FUNCTION(forp) {
 
     return SUCCESS;
 }
-/* }}} */
 
-/* {{{ PHP_RINIT_FUNCTION
- */
 PHP_RINIT_FUNCTION(forp) {
 
     FORP_G(started) = 0;
@@ -192,20 +164,29 @@ PHP_RINIT_FUNCTION(forp) {
     return SUCCESS;
 }
 
-/* {{{ PHP_RSHUTDOWN_FUNCTION
- */
 PHP_RSHUTDOWN_FUNCTION(forp) {
 
     if(FORP_G(started)) {
-        forp_end(TSRMLS_C);
+        // Restores zend api methods
+
+#if PHP_VERSION_ID < 50500
+        if (old_execute) {
+            zend_execute = old_execute;
+    }
+#else
+        if (old_execute_ex) {
+            zend_execute_ex = old_execute_ex;
+        }
+#endif
+
+        if (!FORP_G(no_internals)) {
+            zend_execute_internal = old_execute_internal;
+        }
     }
 
     return SUCCESS;
 }
-/* }}} */
 
-/* {{{ ZEND_MODULE_POST_ZEND_DEACTIVATE_D
- */
 ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp) {
     int i, j;
 
@@ -242,10 +223,7 @@ ZEND_MODULE_POST_ZEND_DEACTIVATE_D(forp) {
 
     return SUCCESS;
 }
-/* }}} */
 
-/* {{{ forp_stats
- */
 ZEND_FUNCTION(forp_stats) {
     int i;
     zval *zvar;
@@ -260,10 +238,7 @@ ZEND_FUNCTION(forp_stats) {
     RETURN_ZVAL(zvar, 1, 0);
 
 }
-/* }}} */
 
-/* {{{ forp_enable
- */
 ZEND_FUNCTION(forp_enable) {
 
     long opt = -1;
@@ -279,10 +254,7 @@ ZEND_FUNCTION(forp_enable) {
     if(opt >= 0) FORP_G(flags) = opt;
     forp_start(TSRMLS_C);
 }
-/* }}} */
 
-/* {{{ forp_start
- */
 ZEND_FUNCTION(forp_start) {
     long opt = -1;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &opt) == FAILURE) {
@@ -292,17 +264,11 @@ ZEND_FUNCTION(forp_start) {
 
     forp_start(TSRMLS_C);
 }
-/* }}} */
 
-/* {{{ forp_end
- */
 ZEND_FUNCTION(forp_end) {
     forp_end(TSRMLS_C);
 }
-/* }}} */
 
-/* {{{ forp_dump
- */
 ZEND_FUNCTION(forp_dump) {
     if (FORP_G(started)) {
         forp_end(TSRMLS_C);
@@ -312,20 +278,14 @@ ZEND_FUNCTION(forp_dump) {
     }
     RETURN_ZVAL(FORP_G(dump), 1, 0);
 }
-/* }}} */
 
-/* {{{ forp_print
- */
 ZEND_FUNCTION(forp_print) {
     if (FORP_G(started)) {
         forp_end(TSRMLS_C);
     }
     forp_stack_dump_cli(TSRMLS_C);
 }
-/* }}} */
 
-/* {{{ forp_inspect
- */
 ZEND_FUNCTION(forp_inspect) {
     char *name;
     int name_len;
@@ -339,11 +299,7 @@ ZEND_FUNCTION(forp_inspect) {
 
     RETURN_TRUE;
 }
-/* }}} */
 
-/* {{{ forp_json
- */
 ZEND_FUNCTION(forp_json) {
     forp_json(TSRMLS_C);
 }
-/* }}} */

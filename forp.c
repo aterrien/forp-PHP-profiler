@@ -196,6 +196,49 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
 
         // Collects params
         if(n->caption) {
+
+#if PHP_VERSION_ID >= 50500
+            if(zend_vm_stack_get_args_count() > 0) {
+                char c[4];
+                zval **arg;
+                const char *nums = "123456789";
+                char *result = NULL;
+                char delims[] = "#";
+                char *to;
+                char *val;
+                result = strtok( strdup(n->caption), delims );
+                while( result != NULL ) {
+                    if (strchr(nums, result[0])) {
+                        to = strndup(result, 1);
+                        arg = zend_vm_stack_get_arg(atoi(to) TSRMLS_CC);
+                        sprintf(c, "#%d", atoi(to));
+                        switch(Z_TYPE_PP(arg)) {
+                            case IS_DOUBLE: case IS_LONG: case IS_BOOL:
+                            case IS_NULL: case IS_STRING:
+                                convert_to_string(*arg);
+                                val = Z_STRVAL_PP(arg);
+                                break;
+                            case IS_RESOURCE:
+                                val = "Resource";
+                                break;
+                            case IS_OBJECT:
+                                val = "Object";
+                                break;
+                            case IS_ARRAY:
+                                val = "Array";
+                                break;
+                            default:
+                                val = "";
+                        }
+                        n->caption = forp_str_replace(
+                            c, val,
+                            n->caption TSRMLS_CC
+                        );
+                    }
+                    result = strtok( NULL, delims );
+                }
+            }
+#else
             void **params;
             int params_count;
             int i;
@@ -206,11 +249,9 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
 #else
             params = EG(argument_stack).top_element-1;
 #endif
+
             params_count = (ulong) *params;
-
-            // TODO extract only required parameters
             for(i = 1; i <= params_count; i++) {
-
                 char c[4];
                 char *v, *v_copy;
                 zval *expr;
@@ -237,12 +278,12 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
                         v = strdup((char*)(*expr).value.str.val);
                     }
                 }
-
                 n->caption = forp_str_replace(
                     c, v,
                     n->caption TSRMLS_CC
                 );
             }
+#endif
         }
     } else {
         // Root node
@@ -331,7 +372,6 @@ void forp_close_node(forp_node_t *n TSRMLS_DC) {
 /* {{{ forp_start
  */
 void forp_start(TSRMLS_D) {
-
     if(FORP_G(started)) {
         php_error_docref(
             NULL TSRMLS_CC,
@@ -420,14 +460,9 @@ void forp_info(TSRMLS_D) {
 /* {{{ forp_execute
  */
 #if PHP_VERSION_ID < 50500
-void forp_execute(zend_op_array *op_array TSRMLS_DC)
-{
-        zend_execute_data    *edata = EG(current_execute_data);
+void forp_execute(zend_op_array *op_array TSRMLS_DC) {
 #else
-void forp_execute_ex(zend_execute_data *execute_data TSRMLS_DC)
-{
-        zend_op_array        *op_array = execute_data->op_array;
-        zend_execute_data    *edata = execute_data->prev_execute_data;
+void forp_execute_ex(zend_execute_data *execute_data TSRMLS_DC) {
 #endif
     forp_node_t *n;
 
@@ -435,15 +470,17 @@ void forp_execute_ex(zend_execute_data *execute_data TSRMLS_DC)
 #if PHP_VERSION_ID < 50500
         old_execute(op_array TSRMLS_CC);
 #else
-        old_execute(execute_data  TSRMLS_CC);
+        old_execute_ex(execute_data TSRMLS_CC);
 #endif
     } else {
-        n = forp_open_node(edata, op_array TSRMLS_CC);
 #if PHP_VERSION_ID < 50500
+        n = forp_open_node(EG(current_execute_data), op_array TSRMLS_CC);
         old_execute(op_array TSRMLS_CC);
 #else
-        old_execute(execute_data  TSRMLS_CC);
+        n = forp_open_node(EG(current_execute_data)->prev_execute_data, execute_data->op_array TSRMLS_CC);
+        old_execute_ex(execute_data TSRMLS_CC);
 #endif
+
         if(n && n->state < 2) forp_close_node(n TSRMLS_CC);
     }
 }
