@@ -198,7 +198,7 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
         if(n->caption) {
 
 #if PHP_VERSION_ID >= 50500
-            if(zend_vm_stack_get_args_count() > 0) {
+            if(zend_vm_stack_get_args_count(TSRMLS_C) > 0) {
                 char c[4];
                 zval **arg;
                 const char *nums = "123456789";
