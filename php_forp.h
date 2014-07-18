@@ -47,6 +47,8 @@ extern zend_module_entry forp_module_entry;
 #include "TSRM.h"
 #endif
 
+#include "forp.h"
+
 PHP_MINIT_FUNCTION(forp);
 PHP_MSHUTDOWN_FUNCTION(forp);
 PHP_RINIT_FUNCTION(forp);
