@@ -306,7 +306,6 @@ ZEND_FUNCTION(forp_json) {
 }
 
 ZEND_FUNCTION(forp_json_google_tracer) {
-    forp_json_google_tracer(TSRMLS_C);
+    char *ret = forp_json_google_tracer(TSRMLS_C);  
+    RETURN_STRING(ret, 1);
 }
-
-

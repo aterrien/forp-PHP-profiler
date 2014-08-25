@@ -213,7 +213,10 @@ void forp_json_inspect(forp_var_t *var TSRMLS_DC) {
 
 /* {{{ forp_json_google_tracer
  */
-void forp_json_google_tracer(TSRMLS_D) {
+const char *forp_json_google_tracer(TSRMLS_D) {
+    char *tmpbuf;
+    char *ret;
+
     int i, j;
     // TODO Win path
     char psep[] = "/";
@@ -244,67 +247,93 @@ void forp_json_google_tracer(TSRMLS_D) {
 
     if(FORP_G(stack_len)) {
 
-        php_printf("{");
-        php_printf("\"traceEvents\":[");
+        asprintf(&tmpbuf,"{");
+        asprintf(&ret,"%s",tmpbuf);
+        asprintf(&tmpbuf,"\"traceEvents\":[");
+        asprintf(&ret,"%s%s",ret,tmpbuf);
         // Some metadata
-        php_printf("{\"args\": {\"name\": \"%s\"}, \"cat\": \"__metadata\", \"name\": \"process_name\", \"ph\": \"M\", \"pid\": 0, \"tid\": 0, \"ts\": 0 },", sapi_module.name);
-        php_printf("{\"args\": {\"name\": \"PHP\"}, \"cat\": \"__metadata\", \"name\": \"thread_name\", \"ph\": \"M\", \"pid\": 0, \"tid\": 0, \"ts\": 0 },");
+        asprintf(&tmpbuf,"{\"args\": {\"name\": \"%s\"}, \"cat\": \"__metadata\", \"name\": \"process_name\", \"ph\": \"M\", \"pid\": 0, \"tid\": 0, \"ts\": 0 },", sapi_module.name);
+        asprintf(&ret,"%s%s",ret,tmpbuf);
+        asprintf(&tmpbuf,"{\"args\": {\"name\": \"PHP\"}, \"cat\": \"__metadata\", \"name\": \"thread_name\", \"ph\": \"M\", \"pid\": 0, \"tid\": 0, \"ts\": 0 },");
+        asprintf(&ret,"%s%s",ret,tmpbuf);
 
         for (i = 0; i < FORP_G(stack_len); ++i) {
 
-            php_printf("{");
-            php_printf("\"%s\":\"%s\",", "ph", "X"); // "Complete event"
-            php_printf("\"%s\":\"%s\",", "pid", "0"); // Fake PID
-            php_printf("\"%s\":\"%s\",", "tid", "0"); // Fake TID
+            asprintf(&tmpbuf,"{");
+            asprintf(&ret,"%s%s",ret,tmpbuf);
+            asprintf(&tmpbuf,"\"%s\":\"%s\",", "ph", "X"); // "Complete event"
+            asprintf(&ret,"%s%s",ret,tmpbuf);
+            asprintf(&tmpbuf,"\"%s\":\"%s\",", "pid", "0"); // Fake PID
+            asprintf(&ret,"%s%s",ret,tmpbuf);
+            asprintf(&tmpbuf,"\"%s\":\"%s\",", "tid", "0"); // Fake TID
+            asprintf(&ret,"%s%s",ret,tmpbuf);
 
 
             n = FORP_G(stack)[i];
 
             if (n->alias) {
-                php_printf("\"%s\":\"%s\",", "name", n->alias);
+                asprintf(&tmpbuf,"\"%s\":\"%s\",", "name", n->alias);
+                asprintf(&ret,"%s%s",ret,tmpbuf);
             } else if (n->function.function) {
                 if (n->function.class) {
                     // class and method
-                    php_printf(
+                    asprintf(&tmpbuf,
                         "\"%s\":\"%s::%s\",",
                         "name",
                         forp_str_replace(nssep,enssep,n->function.class TSRMLS_CC),
                         n->function.function
                         );
+                    asprintf(&ret,"%s%s",ret,tmpbuf);
                 }
                 else {
                     // simple function
-                    php_printf("\"%s\":\"%s\",", "name", n->function.function);
+                    asprintf(&tmpbuf,"\"%s\":\"%s\",", "name", n->function.function);
+                    asprintf(&ret,"%s%s",ret,tmpbuf);
                 }
             }
 
             if (n->function.groups && n->function.groups_len > 0) {
                 j = 0;
-                php_printf("\"%s\":", "cat");
+                asprintf(&tmpbuf,"\"%s\":", "cat");
+                asprintf(&ret,"%s%s",ret,tmpbuf);
                 while(j < n->function.groups_len) {
-                    php_printf("\"%s\"", n->function.groups[j]);
-                    if(j < n->function.groups_len - 1)
-                        php_printf(",");
+                    asprintf(&tmpbuf,"\"%s\"", n->function.groups[j]);
+                    asprintf(&ret,"%s%s",ret,tmpbuf);
+                    if(j < n->function.groups_len - 1){
+                        asprintf(&tmpbuf,",");
+                        asprintf(&ret,"%s%s",ret,tmpbuf);
+                    }
                     j++;
                 }
-                php_printf(",");
+                asprintf(&tmpbuf,",");
+                asprintf(&ret,"%s%s",ret,tmpbuf);
             }
             else {
-                php_printf("\"%s\":\"%s\",", "cat", "PHP");
+                asprintf(&tmpbuf,"\"%s\":\"%s\",", "cat", "PHP");
+                asprintf(&ret,"%s%s",ret,tmpbuf);
             }
 
             if(FORP_G(flags) & FORP_FLAG_TIME) {
-                php_printf("\"%s\":%0.0f,", "dur", round(n->time * 1000000.0) / 1000000.0);
-                php_printf("\"%s\":%ld", "ts", n->time_begin_timestamp_microseconds);
-                // php_printf("\"%s\":%0.0f,", FORP_DUMP_ASSOC_PROFILERTIME, round(n->profiler_duration * 1000000.0) / 1000000.0);
+                asprintf(&tmpbuf,"\"%s\":%0.0f,", "dur", round(n->time * 1000000.0) / 1000000.0);
+                asprintf(&ret,"%s%s",ret,tmpbuf);
+                asprintf(&tmpbuf,"\"%s\":%ld", "ts", n->time_begin_timestamp_microseconds);
+                asprintf(&ret,"%s%s",ret,tmpbuf);
+                // asprintf(&tmpbuf,"\"%s\":%0.0f,", FORP_DUMP_ASSOC_PROFILERTIME, round(n->profiler_duration * 1000000.0) / 1000000.0);
             }
 
-            php_printf("}");
+            asprintf(&tmpbuf,"}");
+            asprintf(&ret,"%s%s",ret,tmpbuf);
 
-            if(i < FORP_G(stack_len) - 1) php_printf(",");
+            if(i < FORP_G(stack_len) - 1) {
+                asprintf(&tmpbuf,",");
+                asprintf(&ret,"%s%s",ret,tmpbuf);
+            }
         }
         
-        php_printf("]}");
-       
+        asprintf(&tmpbuf,"]}");
+        asprintf(&ret,"%s%s",ret,tmpbuf);
+        free(tmpbuf);
+        strdup(ret);
+        return ret;
     }
 }
