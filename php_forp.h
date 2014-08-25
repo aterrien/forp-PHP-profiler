@@ -64,6 +64,7 @@ PHP_FUNCTION(forp_print);
 PHP_FUNCTION(forp_info);
 PHP_FUNCTION(forp_inspect);
 PHP_FUNCTION(forp_json);
+PHP_FUNCTION(forp_json_google_tracer);
 
 /* global variables */
 ZEND_BEGIN_MODULE_GLOBALS(forp)

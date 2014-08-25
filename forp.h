@@ -73,6 +73,7 @@ typedef struct forp_node_t {
     // Duration
     double time;
     double time_begin;
+    long time_begin_timestamp_microseconds;
     double time_end;
 
     // Self cost

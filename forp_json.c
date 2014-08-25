@@ -22,6 +22,7 @@
 
 #include "php.h"
 #include "php_ini.h"
+#include "SAPI.h"
 
 #include "forp.h"
 #include "php_forp.h"
@@ -208,4 +209,102 @@ void forp_json_inspect(forp_var_t *var TSRMLS_DC) {
 		} else {
 				php_printf("\"value\":\"%s\"", forp_addslashes(var->value TSRMLS_CC));
 		}
+}
+
+/* {{{ forp_json_google_tracer
+ */
+void forp_json_google_tracer(TSRMLS_D) {
+    int i, j;
+    // TODO Win path
+    char psep[] = "/";
+    char epsep[] = "\\/";
+    char nssep[] = "\\";
+    char enssep[] = "\\\\";
+    forp_node_t *n;
+
+    /*
+
+
+    {
+   "traceEvents":[
+      {
+         "name":"main",
+         "cat":"PHP",
+         "ts":1407355698849,
+         "pid":0,
+         "tid":0,
+         "ph":"B"
+      },
+      ...
+    */
+
+    if (FORP_G(started)) {
+        forp_end(TSRMLS_C);
+    }
+
+    if(FORP_G(stack_len)) {
+
+        php_printf("{");
+        php_printf("\"traceEvents\":[");
+        // Some metadata
+        php_printf("{\"args\": {\"name\": \"%s\"}, \"cat\": \"__metadata\", \"name\": \"process_name\", \"ph\": \"M\", \"pid\": 0, \"tid\": 0, \"ts\": 0 },", sapi_module.name);
+        php_printf("{\"args\": {\"name\": \"PHP\"}, \"cat\": \"__metadata\", \"name\": \"thread_name\", \"ph\": \"M\", \"pid\": 0, \"tid\": 0, \"ts\": 0 },");
+
+        for (i = 0; i < FORP_G(stack_len); ++i) {
+
+            php_printf("{");
+            php_printf("\"%s\":\"%s\",", "ph", "X"); // "Complete event"
+            php_printf("\"%s\":\"%s\",", "pid", "0"); // Fake PID
+            php_printf("\"%s\":\"%s\",", "tid", "0"); // Fake TID
+
+
+            n = FORP_G(stack)[i];
+
+            if (n->alias) {
+                php_printf("\"%s\":\"%s\",", "name", n->alias);
+            } else if (n->function.function) {
+                if (n->function.class) {
+                    // class and method
+                    php_printf(
+                        "\"%s\":\"%s::%s\",",
+                        "name",
+                        forp_str_replace(nssep,enssep,n->function.class TSRMLS_CC),
+                        n->function.function
+                        );
+                }
+                else {
+                    // simple function
+                    php_printf("\"%s\":\"%s\",", "name", n->function.function);
+                }
+            }
+
+            if (n->function.groups && n->function.groups_len > 0) {
+                j = 0;
+                php_printf("\"%s\":", "cat");
+                while(j < n->function.groups_len) {
+                    php_printf("\"%s\"", n->function.groups[j]);
+                    if(j < n->function.groups_len - 1)
+                        php_printf(",");
+                    j++;
+                }
+                php_printf(",");
+            }
+            else {
+                php_printf("\"%s\":\"%s\",", "cat", "PHP");
+            }
+
+            if(FORP_G(flags) & FORP_FLAG_TIME) {
+                php_printf("\"%s\":%0.0f,", "dur", round(n->time * 1000000.0) / 1000000.0);
+                php_printf("\"%s\":%ld", "ts", n->time_begin_timestamp_microseconds);
+                // php_printf("\"%s\":%0.0f,", FORP_DUMP_ASSOC_PROFILERTIME, round(n->profiler_duration * 1000000.0) / 1000000.0);
+            }
+
+            php_printf("}");
+
+            if(i < FORP_G(stack_len) - 1) php_printf(",");
+        }
+        
+        php_printf("]}");
+       
+    }
 }

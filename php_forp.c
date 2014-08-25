@@ -40,6 +40,7 @@ const zend_function_entry forp_functions[] = {
     PHP_FE(forp_enable, NULL)
     PHP_FE(forp_inspect, NULL)
     PHP_FE(forp_json, NULL)
+    PHP_FE(forp_json_google_tracer, NULL)
     {NULL,NULL,NULL} /*PHP_FE_END*/
 };
 
@@ -303,3 +304,9 @@ ZEND_FUNCTION(forp_inspect) {
 ZEND_FUNCTION(forp_json) {
     forp_json(TSRMLS_C);
 }
+
+ZEND_FUNCTION(forp_json_google_tracer) {
+    forp_json_google_tracer(TSRMLS_C);
+}
+
+
