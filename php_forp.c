@@ -306,6 +306,13 @@ ZEND_FUNCTION(forp_json) {
 }
 
 ZEND_FUNCTION(forp_json_google_tracer) {
-    char *ret = forp_json_google_tracer(TSRMLS_C);  
-    RETURN_STRING(ret, 1);
+    char* filepath = NULL;
+    int filepath_len;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &filepath, &filepath_len) == FAILURE) {
+        return;
+    }
+    if (strlen(filepath) != filepath_len) {
+        return;
+    }
+    forp_json_google_tracer(filepath TSRMLS_C);
 }

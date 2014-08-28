@@ -15,8 +15,6 @@ hanoi(5, 1, 3);
 
 // Stop profiler
 forp_end();
-
 // Get JSON and save it into file
-$json = forp_json_google_tracer();
-file_put_contents(__DIR__."/output-hanoi.json", $json);
+forp_json_google_tracer("/tmp/output_".mt_rand().".json");
 ?>
