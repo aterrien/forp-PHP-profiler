@@ -204,6 +204,25 @@ This is the fastest method in order to send the stack to a JSON compatible clien
 
 See forp_dump() for its structure.
 
+## forp_json_google_tracer() ##
+
+forp_json_google_tracer($filepath) will output stack as Google Trace Event format.
+
+Usage :
+```php
+// Start profiler
+forp_start();
+
+my_complex_function();
+
+// Stop profiler
+forp_end();
+// Get JSON and save it into file
+forp_json_google_tracer("/tmp/output_".mt_rand().".json");
+```
+Then, open Google Chrome or Chromium browser and go to chrome://tracing/. Load the output file and enjoy the result.
+
+
 ## forp_inspect() ##
 
 forp_inspect('symbol', $symbol) will output a detailed representation of a variable in the forp_dump() result.
@@ -398,6 +417,7 @@ PHP 5.4.13 (cli) (built: Mar 15 2013 11:27:51)
 [Anthony Terrien](https://github.com/aterrien/),
 [Ioan Chiriac](https://github.com/ichiriac/),
 [Alexis Okuwa](https://github.com/wojons/)
+[TOMHTML](https://github.com/TOMHTML/)
 
 # MIT License
 
