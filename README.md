@@ -6,6 +6,7 @@ Summary of features :
 - measurement of time and allocated memory for each function
 - CPU usage
 - file and line number of the function call
+- output as Google's Trace Event format
 - caption of functions
 - grouping of functions
 - aliases of functions (useful for anonymous functions)
@@ -218,7 +219,7 @@ my_complex_function();
 // Stop profiler
 forp_end();
 // Get JSON and save it into file
-forp_json_google_tracer("/tmp/output_".mt_rand().".json");
+forp_json_google_tracer("/tmp/output.json");
 ```
 Then, open Google Chrome or Chromium browser and go to chrome://tracing/. Load the output file and enjoy the result.
 
@@ -339,10 +340,10 @@ But, if you are looking for a user interface with a lot of features, we've made 
 [forp-ui](https://github.com/aterrien/forp-ui/)
 
 You can see forp in action with the fastest PHP Frameworks :
-- [Beaba](http://87.117.252.103/beaba/hello) (https://github.com/ichiriac/beaba-light)
-- [Slim](http://87.117.252.103/slim/hello) (https://github.com/codeguy/Slim)
-- [Silex](http://87.117.252.103/silex/hello) (https://github.com/fabpot/Silex)
-- [Laravel](http://87.117.252.103/laravel/hello) (https://github.com/laravel/laravel)
+- [Beaba](http://forp.io/beaba/hello) (https://github.com/ichiriac/beaba-light)
+- [Slim](http://forp.io/slim/hello) (https://github.com/codeguy/Slim)
+- [Silex](http://forp.io/silex/hello) (https://github.com/fabpot/Silex)
+- [Laravel](http://forp.io/laravel/hello) (https://github.com/laravel/laravel)
 
 ![groups](https://raw.github.com/aterrien/forp-ui/master/doc/ui-consolas-groups.png)
 
@@ -418,12 +419,12 @@ PHP 5.4.13 (cli) (built: Mar 15 2013 11:27:51)
 
 [Anthony Terrien](https://github.com/aterrien/),
 [Ioan Chiriac](https://github.com/ichiriac/),
-[Alexis Okuwa](https://github.com/wojons/)
+[Alexis Okuwa](https://github.com/wojons/),
 [TOMHTML](https://github.com/TOMHTML/)
 
 # MIT License
 
-Copyright (C) 2013 Anthony Terrien
+Copyright (C) 2014 Anthony Terrien
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
