@@ -222,6 +222,8 @@ forp_json_google_tracer("/tmp/output_".mt_rand().".json");
 ```
 Then, open Google Chrome or Chromium browser and go to chrome://tracing/. Load the output file and enjoy the result.
 
+![Example output with an existing Drupal website](/docs/images/google-tracing-example_thumb.png?raw=true "Google Tracing Format example output")
+
 
 ## forp_inspect() ##
 
