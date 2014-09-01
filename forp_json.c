@@ -180,7 +180,7 @@ void forp_json(TSRMLS_D) {
 /* {{{ forp_json_inspect
  * Recursive output inspect structure
  */
-void forp_json_inspect(forp_var_t *var TSRMLS_DC) {		
+void forp_json_inspect(forp_var_t *var TSRMLS_DC) {
 		uint i;
 		if(var->stack_idx > -1) php_printf("\"stack_idx\":%d,", var->stack_idx);
     if(var->type) php_printf("\"type\":\"%s\",", var->type);
@@ -225,8 +225,6 @@ void forp_json_google_tracer(char *filepath TSRMLS_DC) {
     forp_node_t *n;
 
     /*
-
-
     {
    "traceEvents":[
       {
@@ -283,15 +281,15 @@ void forp_json_google_tracer(char *filepath TSRMLS_DC) {
 
             if (n->function.groups && n->function.groups_len > 0) {
                 j = 0;
-                fprintf(fp,"\"%s\":", "cat");
+                fprintf(fp,"\"%s\":\"", "cat");
                 while(j < n->function.groups_len) {
-                    fprintf(fp,"\"%s\"", n->function.groups[j]);
+                    fprintf(fp,"%s", n->function.groups[j]);
                     if(j < n->function.groups_len - 1){
                         fprintf(fp,",");
                         }
                     j++;
                 }
-                fprintf(fp,",");
+                fprintf(fp,"\",");
                 }
             else {
                 fprintf(fp,"\"%s\":\"%s\",", "cat", "PHP");
@@ -299,7 +297,7 @@ void forp_json_google_tracer(char *filepath TSRMLS_DC) {
 
             if(FORP_G(flags) & FORP_FLAG_TIME) {
                 fprintf(fp,"\"%s\":%0.0f,", "dur", round(n->time * 1000000.0) / 1000000.0);
-                fprintf(fp,"\"%s\":%ld", "ts", n->time_begin_timestamp_microseconds);
+                fprintf(fp,"\"%s\":%0.0f", "ts", n->time_begin);
                 // fprintf(fp,"\"%s\":%0.0f,", FORP_DUMP_ASSOC_PROFILERTIME, round(n->profiler_duration * 1000000.0) / 1000000.0);
             }
 
@@ -308,7 +306,7 @@ void forp_json_google_tracer(char *filepath TSRMLS_DC) {
                 fprintf(fp,",");
                 }
         }
-        
+
         fprintf(fp,"]}");
         fclose(fp);
         return;

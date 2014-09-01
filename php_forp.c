@@ -314,5 +314,5 @@ ZEND_FUNCTION(forp_json_google_tracer) {
     if (strlen(filepath) != filepath_len) {
         return;
     }
-    forp_json_google_tracer(filepath TSRMLS_DC);
+    forp_json_google_tracer(filepath TSRMLS_CC);
 }

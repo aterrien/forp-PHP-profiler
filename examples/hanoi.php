@@ -3,6 +3,9 @@
 // Start profiler
 forp_start();
 
+/**
+ * @ProfileGroup("cat1", "cat2")
+ */
 function hanoi($plates, $from, $to) { 
     while($plates > 0) { 
         $using = 6 - ($from + $to); 

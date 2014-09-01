@@ -118,7 +118,6 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
     forp_node_t *n;
     int key;
     double start_time;
-    long start_timestamp;
 
     // preparing current node
     // will be profiled after
@@ -137,7 +136,6 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
     // self duration on open
     gettimeofday(&tv, NULL);
     start_time = tv.tv_sec * 1000000.0 + tv.tv_usec;
-    start_timestamp = tv.tv_sec * 1000000.0 + tv.tv_usec;
 
     // continues node init
     n->state = 1; // opened
@@ -145,7 +143,6 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
     n->parent = FORP_G(current_node);
 
     n->time_begin = 0;
-    n->time_begin_timestamp_microseconds = 0;
     n->time_end = 0;
     n->time = 0;
 
@@ -329,7 +326,6 @@ forp_node_t *forp_open_node(zend_execute_data *edata, zend_op_array *op_array TS
     if(FORP_G(flags) & FORP_FLAG_TIME) {
         gettimeofday(&tv, NULL);
         n->time_begin = tv.tv_sec * 1000000.0 + tv.tv_usec;
-        n->time_begin_timestamp_microseconds = start_timestamp;
         n->profiler_duration = n->time_begin - start_time;
     }
 
