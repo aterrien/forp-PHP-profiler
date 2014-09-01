@@ -218,6 +218,7 @@ my_complex_function();
 
 // Stop profiler
 forp_end();
+
 // Get JSON and save it into file
 forp_json_google_tracer("/tmp/output.json");
 ```
