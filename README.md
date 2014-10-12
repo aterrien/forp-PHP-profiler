@@ -361,7 +361,9 @@ php5-dev
 apt-get install php5-dev
 ```
 
-## Install with Composer##
+## Install with Composer ##
+
+Require forp-PHP-profiler in your project
 
 ```json
 "require-dev":       {
@@ -374,14 +376,17 @@ apt-get install php5-dev
   }
 ]
 ```
-
+compile
 ```sh
 cd vendor/aterrien/forp-PHP-profiler/ext/forp
 phpize
 ./configure
 make && make install
 ```
-
+and enable forp in your php.ini
+```sh
+extension=forp.so
+```
 ## or opt for "old school" installation ##
 
 Use current release
@@ -395,16 +400,13 @@ OR dev-master (unstable, at your own risk)
 git clone https://github.com/aterrien/forp-PHP-profiler
 cd forp-PHP-profiler/ext/forp
 ```
-
-and compile
+compile
 ```sh
 phpize
 ./configure
 make && make install
 ```
-
-## php.ini ##
-
+and enable forp in your php.ini
 ```sh
 extension=forp.so
 ```
