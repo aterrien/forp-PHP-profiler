@@ -2,24 +2,24 @@
   "name"        : "aterrien/forp-PHP-profiler",
   "version"     : "1.0.1",
   "description" : "A PHP profiler written in C. forp is a lightweight PHP extension which provides the full call stack of your script, with CPU and memory usage, in a plain PHP Array or JSON output.",
-  "homepage"    : "https://github.com/wecodemore/GitPHPHooks",
+  "homepage"    : "https://github.com/aterrien/forp-PHP-profiler",
   "keywords"    : [ "php", "profiler", "benchmark", "quality" ],
   "license"     : "MIT",
   "authors"     : [
     {
       "name"  : "Anthony Terrien",
-      "email" : "foo@example.com"
+      "email" : "forp@anthonyterrien.com"
     }
   ],
-	"support"     : {
-		"issues" : "https://github.com/aterrien/forp-PHP-profiler/issues"
-	},
-	"minimum-stability" : "dev",
-	"require"     : {
-		"php" : ">=5.3"
-	},
-	"suggest": {},
-	"autoload"    : {
-		"classmap" : [ "" ]
-	}
+  "support"     : {
+    "issues" : "https://github.com/aterrien/forp-PHP-profiler/issues"
+  },
+  "minimum-stability" : "dev",
+  "require"     : {
+    "php" : ">=5.3"
+  },
+  "suggest": {},
+  "autoload"    : {
+    "classmap" : [ "" ]
+  }
 }
