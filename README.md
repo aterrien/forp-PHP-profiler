@@ -367,7 +367,7 @@ Require forp-PHP-profiler in your project composer.json
 
 ```json
 "require-dev":       {
-  "aterrien/forp-PHP-profiler" : "~1.1"
+  "aterrien/forp-profiler" : "~1.1"
 },
 "repositories" : [
   {
@@ -382,7 +382,7 @@ php composer.phar install
 ```
 compile
 ```sh
-cd vendor/aterrien/forp-PHP-profiler/ext/forp
+cd vendor/aterrien/forp-profiler/ext/forp
 phpize
 ./configure
 make && make install
