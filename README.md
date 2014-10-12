@@ -26,6 +26,7 @@ function foo()
 {
     echo "Hello world !\n";
 };
+
 foo();
 
 // stop forp buffering
