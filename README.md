@@ -353,15 +353,15 @@ You can see forp in action with the fastest PHP Frameworks :
 
 # Installation, requirements #
 
-## Linux Install ##
+## Requirements ##
 
-* requirement (php5-dev)
+php5-dev
 
 ```sh
 apt-get install php5-dev
 ```
 
-* composer
+## Install with Composer##
 
 ```json
 "require-dev":       {
@@ -382,7 +382,7 @@ phpize
 make && make install
 ```
 
-* download
+## or opt for "old school" installation ##
 
 Use current release
 ```sh
@@ -396,14 +396,14 @@ git clone https://github.com/aterrien/forp-PHP-profiler
 cd forp-PHP-profiler/ext/forp
 ```
 
-and install
+and compile
 ```sh
 phpize
 ./configure
 make && make install
 ```
 
-* php.ini
+## php.ini ##
 
 ```sh
 extension=forp.so
