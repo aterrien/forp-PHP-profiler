@@ -361,23 +361,42 @@ You can see forp in action with the fastest PHP Frameworks :
 apt-get install php5-dev
 ```
 
-* download
+* composer
 
-current release
-```sh
-wget https://github.com/aterrien/forp/archive/1.0.1.tar.gz
-tar -xvzf 1.0.1.tar.gz
-cd 1.0.1
+```json
+"require-dev":       {
+  "aterrien/forp-PHP-profiler" : "~1.1"
+},
+"repositories" : [
+  {
+     "type" : "git",
+     "url"  : "git@github.com:aterrien/forp-PHP-profiler.git"
+  }
+]
 ```
 
-or master (unstable)
+```sh
+cd vendor/aterrien/forp-PHP-profiler/ext/forp
+phpize
+./configure
+make && make install
+```
+
+* download
+
+Use current release
+```sh
+wget https://github.com/aterrien/forp/archive/1.1.0.tar.gz
+tar -xvzf 1.1.0.tar.gz
+cd 1.1.0/ext/forp
+```
+OR dev-master (unstable, at your own risk)
 ```sh
 git clone https://github.com/aterrien/forp-PHP-profiler
 cd forp-PHP-profiler/ext/forp
 ```
 
-* install
-
+and install
 ```sh
 phpize
 ./configure
@@ -389,8 +408,6 @@ make && make install
 ```sh
 extension=forp.so
 ```
-
-... you can restart your PHP server.
 
 ## Tested OS and platforms ##
 
