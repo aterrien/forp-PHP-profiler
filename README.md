@@ -376,6 +376,10 @@ Require forp-PHP-profiler in your project
   }
 ]
 ```
+run Composer install
+```sh
+php composer.phar install
+```
 compile
 ```sh
 cd vendor/aterrien/forp-PHP-profiler/ext/forp
