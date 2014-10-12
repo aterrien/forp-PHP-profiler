@@ -363,7 +363,7 @@ apt-get install php5-dev
 
 ## Install with Composer ##
 
-Require forp-PHP-profiler in your project
+Require forp-PHP-profiler in your project composer.json
 
 ```json
 "require-dev":       {
