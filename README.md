@@ -24,7 +24,7 @@ forp_start();
 // here, our PHP code we want to profile
 function foo()
 {
-    echo 'Hello world !';
+    echo "Hello world !\n";
 };
 foo();
 
@@ -39,8 +39,7 @@ print_r($profileStack);
 
 Result :
 ```
-foo = Hello world !
-forp stack =
+Hello world !
 Array
 (
     [utime] => 0
