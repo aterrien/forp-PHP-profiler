@@ -164,7 +164,7 @@ Array
 
 ## forp_start() flags ##
 
-- FORP_FLAG_CPU : activate collect of time
+- FORP_FLAG_TIME : activate collect of time
 - FORP_FLAG_MEMORY : activate collect of memory usage
 - FORP_FLAG_CPU : retrieve the cpu usage
 - FORP_FLAG_CAPTION : enable caption handler
