@@ -6,6 +6,7 @@ php:
     - 5.5
 
 before_script:
+    - cd ext/forp
     - phpize && ./configure && make && sudo make install
     - echo "extension=forp.so" >> `php --ini | grep "Loaded Configuration" | sed -e "s|.*:\s*||"`
 
