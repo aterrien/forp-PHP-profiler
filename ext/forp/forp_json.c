@@ -97,20 +97,31 @@ void forp_json(TSRMLS_D) {
 
             n = FORP_G(stack)[i];
 
-            if (n->filename) {
+            if (n->function.filename) {
                 php_printf(
-                        "\"%s\":\"%s\",",
-                        FORP_DUMP_ASSOC_FILE,
-                        forp_str_replace(psep,epsep,n->function.filename TSRMLS_CC)
-                        );
+                    "\"%s\":\"%s\",",
+                    FORP_DUMP_ASSOC_FILE,
+                    forp_str_replace(psep,epsep,n->function.filename TSRMLS_CC)
+                );
+            } else if (n->filename) {
+                php_printf(
+                    "\"%s\":\"%s\",",
+                    FORP_DUMP_ASSOC_FILE,
+                    forp_str_replace(psep,epsep,n->filename TSRMLS_CC)
+                );
+            } else {
+                php_printf(
+                    "\"%s\":\"**internal**\",",
+                    FORP_DUMP_ASSOC_FILE
+                );
             }
 
             if (n->function.class) {
                 php_printf(
-                        "\"%s\":\"%s\",",
-                        FORP_DUMP_ASSOC_CLASS,
-                        forp_str_replace(nssep,enssep,n->function.class TSRMLS_CC)
-                        );
+                    "\"%s\":\"%s\",",
+                    FORP_DUMP_ASSOC_CLASS,
+                    forp_str_replace(nssep,enssep,n->function.class TSRMLS_CC)
+                );
             }
 
             if (n->alias) {
@@ -159,21 +170,21 @@ void forp_json(TSRMLS_D) {
 
             if(i < FORP_G(stack_len) - 1) php_printf(",");
         }
-				if(FORP_G(inspect_len)) {
-						php_printf("],\"inspect\":{");
-						for (i = 0; i < FORP_G(inspect_len); i++) {
-								php_printf("\"%s\": {",FORP_G(inspect)[i]->name);
-								forp_json_inspect(FORP_G(inspect)[i] TSRMLS_CC);
-								if ( i + 1 < FORP_G(inspect_len) )  {
-										php_printf("},");
-								} else {
-										php_printf("}");
-								}
-						}
-						php_printf("}}");
-				} else {
-						php_printf("]}");
-				}
+        if(FORP_G(inspect_len)) {
+            php_printf("],\"inspect\":{");
+            for (i = 0; i < FORP_G(inspect_len); i++) {
+                php_printf("\"%s\": {",FORP_G(inspect)[i]->name);
+                forp_json_inspect(FORP_G(inspect)[i] TSRMLS_CC);
+                if ( i + 1 < FORP_G(inspect_len) )  {
+                    php_printf("},");
+                } else {
+                    php_printf("}");
+                }
+            }
+            php_printf("}}");
+        } else {
+            php_printf("]}");
+        }
     }
 }
 
